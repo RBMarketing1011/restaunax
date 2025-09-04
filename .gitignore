@@ -1,28 +1,23 @@
-# Firebase build and deployment files
-/firebase-debug.log
-/firebase-debug.*.log
-.firebaserc
+# Dependencies
+node_modules/
 
-# Firebase Hosting
-/firebase.json
-*.cache
-hosting/.cache
+# Next.js
+/.next/
+/out/
 
-# Firebase Functions
-/functions/node_modules/
-/functions/.env
-/functions/package-lock.json
+# Environment variables
+.env*
 
-# Firebase Emulators
-/firebase-*.zip
-/.firebase/
-/emulator-ui/
+# TypeScript
+*.tsbuildinfo
 
 # Logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Environment files (local configs)
-/.env.*
+# Package manager
+.npm
+.eslintcache
+
+# Vercel
+.vercel
