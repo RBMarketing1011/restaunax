@@ -1052,7 +1052,7 @@ export default function OrdersDashboard ()
             } }>
               <DelayedOrdersCard orders={ liveOrders } />
             </Box>
-            
+
             {/* Live Orders Table */ }
             <Box sx={ {
               overflow: 'hidden',
