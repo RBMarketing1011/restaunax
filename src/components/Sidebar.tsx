@@ -23,7 +23,6 @@ import
   Assignment,
   Dashboard,
   Close,
-  AccountCircle,
   Logout,
   Settings
 } from '@mui/icons-material'
@@ -41,7 +40,7 @@ const menuItems = [
     text: 'Dashboard',
     icon: <Dashboard />,
     path: '/dashboard',
-    available: false // Will add later
+    available: true // Dashboard is now available
   },
   {
     text: 'Orders',
