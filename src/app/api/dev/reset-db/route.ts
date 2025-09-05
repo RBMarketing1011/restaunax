@@ -1,7 +1,112 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// Sample orders for seeding database
+// Base menu items for generating orders
+const menuItems = [
+  { name: 'Margherita Pizza', price: 15.99 },
+  { name: 'Pepperoni Pizza', price: 18.99 },
+  { name: 'Supreme Pizza', price: 22.99 },
+  { name: 'Hawaiian Pizza', price: 19.99 },
+  { name: 'BBQ Chicken Pizza', price: 21.99 },
+  { name: 'Veggie Pizza', price: 17.99 },
+  { name: 'Meat Lovers Pizza', price: 24.99 },
+  { name: 'Gluten-Free Pizza', price: 22.99 },
+  { name: 'Seafood Pizza', price: 26.99 },
+  { name: 'Caesar Salad', price: 8.99 },
+  { name: 'Greek Salad', price: 11.99 },
+  { name: 'Side Salad', price: 3.00 },
+  { name: 'Buffalo Wings', price: 9.76 },
+  { name: 'Chicken Wings', price: 14.98 },
+  { name: 'Mozzarella Sticks', price: 10.99 },
+  { name: 'Garlic Bread', price: 5.99 },
+  { name: 'Breadsticks', price: 1.49 },
+  { name: 'Chicken Alfredo', price: 16.99 },
+  { name: 'Shrimp Scampi', price: 18.99 },
+  { name: 'Tiramisu', price: 6.99 },
+  { name: 'Soda', price: 2.99 }
+]
+
+const customerNames = [
+  'Alex Johnson', 'Sarah Chen', 'Mike Rodriguez', 'Emily Davis', 'James Wilson',
+  'Lisa Thompson', 'Robert Brown', 'Jennifer Lee', 'Daniel Jackson', 'Maria Garcia',
+  'David Smith', 'Ashley Miller', 'Chris Anderson', 'Jessica Taylor', 'Kevin Martinez',
+  'Amanda White', 'Brian Clark', 'Nicole Lewis', 'Ryan Walker', 'Stephanie Hall'
+]
+
+const orderStatuses = [ 'pending', 'preparing', 'ready', 'delivered' ]
+const orderTypes = [ 'pickup', 'delivery' ]
+
+// Function to generate random order data for the last 30 days
+function generateOrdersForLast30Days (accountId: string, ordersPerDay = 3)
+{
+  const orders = []
+  const now = new Date()
+
+  for (let day = 0; day < 30; day++)
+  {
+    const orderDate = new Date(now)
+    orderDate.setDate(now.getDate() - day)
+
+    // Generate 1-5 orders per day (random)
+    const dailyOrderCount = Math.floor(Math.random() * 5) + 1
+
+    for (let orderIndex = 0; orderIndex < dailyOrderCount; orderIndex++)
+    {
+      // Random time during the day
+      const hour = Math.floor(Math.random() * 14) + 8 // 8 AM to 10 PM
+      const minute = Math.floor(Math.random() * 60)
+      orderDate.setHours(hour, minute, 0, 0)
+
+      // Generate random items (1-4 items per order)
+      const itemCount = Math.floor(Math.random() * 4) + 1
+      const orderItems = []
+      let total = 0
+
+      for (let i = 0; i < itemCount; i++)
+      {
+        const randomItem = menuItems[ Math.floor(Math.random() * menuItems.length) ]
+        const quantity = Math.floor(Math.random() * 3) + 1 // 1-3 quantity
+        const itemTotal = randomItem.price * quantity
+
+        orderItems.push({
+          name: randomItem.name,
+          quantity: quantity,
+          price: randomItem.price
+        })
+
+        total += itemTotal
+      }
+
+      // Determine status based on order age
+      let status = 'delivered'
+      if (day === 0)
+      {
+        // Today's orders - mix of all statuses
+        const todayStatuses = [ 'pending', 'preparing', 'ready', 'delivered' ]
+        status = todayStatuses[ Math.floor(Math.random() * todayStatuses.length) ]
+      } else if (day === 1)
+      {
+        // Yesterday's orders - mostly delivered, some ready
+        status = Math.random() > 0.2 ? 'delivered' : 'ready'
+      }
+      // Older orders are all delivered
+
+      orders.push({
+        customerName: customerNames[ Math.floor(Math.random() * customerNames.length) ],
+        orderType: orderTypes[ Math.floor(Math.random() * orderTypes.length) ] as 'pickup' | 'delivery',
+        status: status as 'pending' | 'preparing' | 'ready' | 'delivered',
+        total: Math.round(total * 100) / 100, // Round to 2 decimal places
+        createdAt: new Date(orderDate),
+        accountId: accountId,
+        items: orderItems
+      })
+    }
+  }
+
+  return orders
+}
+
+// Sample orders for seeding database (fallback/basic seed)
 const sampleOrders = [
   {
     customerName: 'Alex Johnson',
@@ -118,8 +223,8 @@ export async function GET (request: NextRequest)
 
     if (accountId)
     {
-      // Seed specific account with orders
-      console.log(`Seeding account ${ accountId } with orders...`)
+      // Seed specific account with orders for the last 30 days
+      console.log(`Seeding account ${ accountId } with 30 days of order data...`)
 
       // Verify account exists
       const account = await prisma.account.findUnique({
@@ -147,8 +252,11 @@ export async function GET (request: NextRequest)
         where: { accountId: accountId }
       })
 
+      // Generate orders for the last 30 days
+      const generatedOrders = generateOrdersForLast30Days(accountId)
+
       // Create orders for this account
-      for (const orderData of sampleOrders)
+      for (const orderData of generatedOrders)
       {
         await prisma.order.create({
           data: {
@@ -156,6 +264,8 @@ export async function GET (request: NextRequest)
             orderType: orderData.orderType,
             status: orderData.status,
             total: orderData.total,
+            createdAt: orderData.createdAt,
+            updatedAt: orderData.createdAt,
             accountId: accountId,
             items: {
               create: orderData.items.map(item => ({
@@ -168,13 +278,17 @@ export async function GET (request: NextRequest)
         })
       }
 
-      console.log(`Account ${ accountId } seeded successfully`)
+      console.log(`Account ${ accountId } seeded successfully with ${ generatedOrders.length } orders`)
 
       return NextResponse.json(
         {
-          message: `Account seeded successfully`,
+          message: `Account seeded successfully with 30 days of order data`,
           accountId: accountId,
-          ordersCreated: sampleOrders.length,
+          ordersCreated: generatedOrders.length,
+          dateRange: {
+            from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+            to: new Date().toISOString()
+          },
           timestamp: new Date().toISOString()
         },
         { status: 200 }

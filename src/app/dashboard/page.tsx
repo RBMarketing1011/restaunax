@@ -28,8 +28,18 @@ import
   SelectChangeEvent,
   Card,
   CardHeader,
-  CardContent
+  CardContent,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TableContainer,
+  useMediaQuery
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import FilterListIcon from '@mui/icons-material/FilterList'
 import
 {
   PieChart,
@@ -319,6 +329,10 @@ function FiltersBar ({ filters, onFiltersChange, viewState, onViewChange }: {
   onViewChange: (view: ViewState) => void
 })
 {
+  const [ filterModalOpen, setFilterModalOpen ] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+
   const handleTimeRangeChange = (event: SelectChangeEvent) =>
   {
     onFiltersChange({ ...filters, timeRange: event.target.value })
@@ -338,6 +352,121 @@ function FiltersBar ({ filters, onFiltersChange, viewState, onViewChange }: {
     }
   }
 
+  const FilterModal = () => (
+    <Dialog
+      open={ filterModalOpen }
+      onClose={ () => setFilterModalOpen(false) }
+      fullWidth
+      maxWidth="sm"
+    >
+      <DialogTitle>Filters</DialogTitle>
+      <DialogContent>
+        <Stack spacing={ 3 } sx={ { pt: 1 } }>
+          <FormControl fullWidth>
+            <InputLabel>Time Range</InputLabel>
+            <Select
+              value={ filters.timeRange }
+              onChange={ handleTimeRangeChange }
+              label="Time Range"
+            >
+              <MenuItem value="today">Today</MenuItem>
+              <MenuItem value="last7days">Last 7 days</MenuItem>
+              <MenuItem value="last30days">Last 30 days</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              multiple
+              value={ filters.statuses }
+              onChange={ handleStatusChange }
+              input={ <OutlinedInput label="Status" /> }
+            >
+              <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="preparing">Preparing</MenuItem>
+              <MenuItem value="ready">Ready</MenuItem>
+              <MenuItem value="delivered">Delivered</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Box>
+            <Typography variant="subtitle2" sx={ { mb: 1 } }>Order Type</Typography>
+            <ToggleButtonGroup
+              value={ filters.orderType }
+              exclusive
+              onChange={ handleOrderTypeChange }
+              aria-label="order type"
+              fullWidth
+            >
+              <ToggleButton value="all" aria-label="all">
+                All
+              </ToggleButton>
+              <ToggleButton value="pickup" aria-label="pickup">
+                Pickup
+              </ToggleButton>
+              <ToggleButton value="delivery" aria-label="delivery">
+                Delivery
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={ () => setFilterModalOpen(false) }>Close</Button>
+      </DialogActions>
+    </Dialog>
+  )
+
+  if (isMobile)
+  {
+    return (
+      <>
+        <Card sx={ { mb: 3 } }>
+          <CardContent>
+            <Stack direction="row" spacing={ 2 } alignItems="center" justifyContent="space-between">
+              { viewState.currentView === 'dashboard' && (
+                <IconButton
+                  onClick={ () => setFilterModalOpen(true) }
+                  sx={ {
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    '&:hover': { bgcolor: 'primary.dark' }
+                  } }
+                >
+                  <FilterListIcon />
+                </IconButton>
+              ) }
+
+              <ToggleButtonGroup
+                value={ viewState.currentView }
+                exclusive
+                onChange={ (_event, newView) =>
+                {
+                  if (newView !== null)
+                  {
+                    onViewChange({ currentView: newView })
+                  }
+                } }
+                aria-label="view type"
+                size="small"
+              >
+                <ToggleButton value="dashboard" aria-label="dashboard">
+                  Dashboard
+                </ToggleButton>
+                <ToggleButton value="liveOrders" aria-label="live orders">
+                  Live Orders
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+          </CardContent>
+        </Card>
+        <FilterModal />
+      </>
+    )
+  }
+
+  // Desktop version
   return (
     <Card sx={ { mb: 3 } }>
       <CardContent>
@@ -589,63 +718,82 @@ function LiveOrdersTable ({ orders }: { orders: Order[] })
   }
 
   return (
-    <Card>
+    <Card sx={ { height: { xs: 'auto', md: 'auto' }, display: 'flex', flexDirection: 'column' } }>
       <CardHeader title="Live Orders" />
-      <CardContent>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Customer Name</TableCell>
-              <TableCell>Order Type</TableCell>
-              <TableCell>Items Count</TableCell>
-              <TableCell
-                onClick={ () =>
-                {
-                  if (sortBy === 'total')
+      <CardContent sx={ { p: 0, flex: 1, overflow: 'hidden' } }>
+        <TableContainer sx={ {
+          height: { xs: '60vh', md: '500px' },
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '4px'
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: '#555'
+          }
+        } }>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={ { minWidth: '120px' } }>Customer Name</TableCell>
+                <TableCell sx={ { minWidth: '100px' } }>Order Type</TableCell>
+                <TableCell sx={ { minWidth: '100px' } }>Items Count</TableCell>
+                <TableCell
+                  onClick={ () =>
                   {
-                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                  } else
+                    if (sortBy === 'total')
+                    {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    } else
+                    {
+                      setSortBy('total')
+                      setSortOrder('desc')
+                    }
+                  } }
+                  sx={ { cursor: 'pointer', minWidth: '80px' } }
+                >
+                  Total
+                </TableCell>
+                <TableCell sx={ { minWidth: '100px' } }>Status</TableCell>
+                <TableCell
+                  onClick={ () =>
                   {
-                    setSortBy('total')
-                    setSortOrder('desc')
-                  }
-                } }
-                sx={ { cursor: 'pointer' } }
-              >
-                Total
-              </TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell
-                onClick={ () =>
-                {
-                  if (sortBy === 'createdAt')
-                  {
-                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                  } else
-                  {
-                    setSortBy('createdAt')
-                    setSortOrder('desc')
-                  }
-                } }
-                sx={ { cursor: 'pointer' } }
-              >
-                Created
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            { paginatedOrders.map((order) => (
-              <TableRow key={ order.id }>
-                <TableCell>{ order.customerName }</TableCell>
-                <TableCell>{ order.orderType }</TableCell>
-                <TableCell>{ order.items.length }</TableCell>
-                <TableCell>{ formatCurrency(order.total) }</TableCell>
-                <TableCell>{ getStatusChip(order.status) }</TableCell>
-                <TableCell>{ formatRelativeTime(order.createdAt) }</TableCell>
+                    if (sortBy === 'createdAt')
+                    {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    } else
+                    {
+                      setSortBy('createdAt')
+                      setSortOrder('desc')
+                    }
+                  } }
+                  sx={ { cursor: 'pointer', minWidth: '100px' } }
+                >
+                  Created
+                </TableCell>
               </TableRow>
-            )) }
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              { paginatedOrders.map((order) => (
+                <TableRow key={ order.id }>
+                  <TableCell>{ order.customerName }</TableCell>
+                  <TableCell>{ order.orderType }</TableCell>
+                  <TableCell>{ order.items.length }</TableCell>
+                  <TableCell>{ formatCurrency(order.total) }</TableCell>
+                  <TableCell>{ getStatusChip(order.status) }</TableCell>
+                  <TableCell>{ formatRelativeTime(order.createdAt) }</TableCell>
+                </TableRow>
+              )) }
+            </TableBody>
+          </Table>
+        </TableContainer>
         <TablePagination
           rowsPerPageOptions={ [ 5, 10, 25 ] }
           component="div"
@@ -658,6 +806,7 @@ function LiveOrdersTable ({ orders }: { orders: Order[] })
             setRowsPerPage(parseInt(event.target.value, 10))
             setPage(0)
           } }
+          sx={ { px: 2, py: 1, borderTop: 1, borderColor: 'divider' } }
         />
       </CardContent>
     </Card>
@@ -820,7 +969,15 @@ export default function OrdersDashboard ()
 
   return (
     <DashboardLayout title="Dashboard">
-      <Container maxWidth="lg" sx={ { py: 3 } }>
+      <Container
+        maxWidth="lg"
+        sx={ {
+          py: 3,
+          overflow: 'hidden',
+          width: '100%',
+          maxWidth: '100%'
+        } }
+      >
         {/* Header */ }
         <Box mb={ 3 }>
           <Typography variant="h4" component="h1" fontWeight="bold" sx={ { color: 'black' } }>
@@ -851,34 +1008,59 @@ export default function OrdersDashboard ()
 
             {/* Charts */ }
             <Box sx={ { display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' } }>
-              <Box sx={ { flex: { xs: '1 1 100%', md: '1 1 48%' } } }>
-                <StatusPieChart orders={ filteredOrders } />
-              </Box>
-              <Box sx={ { flex: { xs: '1 1 100%', md: '1 1 48%' } } }>
+              <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
                 <OrdersOverTimeChart orders={ filteredOrders } timeRange={ filters.timeRange } />
               </Box>
-              <Box sx={ { flex: { xs: '1 1 100%', md: '1 1 48%' } } }>
+              <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
                 <PickupVsDeliveryChart orders={ filteredOrders } />
               </Box>
-              <Box sx={ { flex: { xs: '1 1 100%', md: '1 1 48%' } } }>
+              <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
                 <TopItemsChart orders={ filteredOrders } />
               </Box>
             </Box>
 
             {/* Tables */ }
-            <Box sx={ { display: 'flex', gap: 3, flexWrap: 'wrap' } }>
-              <Box sx={ { flex: { xs: '1 1 100%', md: '1 1 65%' } } }>
+            <Box sx={ {
+              display: 'flex',
+              gap: 3,
+              flexWrap: 'wrap',
+              overflow: 'hidden',
+              width: '100%'
+            } }>
+              <Box sx={ {
+                flex: { xs: '1 1 100%' },
+                overflow: 'hidden',
+                minWidth: 0
+              } }>
                 <LiveOrdersTable orders={ filteredOrders } />
-              </Box>
-              <Box sx={ { flex: { xs: '1 1 100%', md: '1 1 30%' } } }>
-                <DelayedOrdersCard orders={ filteredOrders } />
               </Box>
             </Box>
           </>
         ) : (
           /* Live Orders View */
-          <Box>
-            <LiveOrdersTable orders={ liveOrders } />
+          <Box sx={ {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            overflow: 'hidden',
+            width: '100%'
+          } }>
+            {/* Delayed Orders Card - Show urgent issues first */ }
+            <Box sx={ {
+              overflow: 'hidden',
+              minWidth: 0
+            } }>
+              <DelayedOrdersCard orders={ liveOrders } />
+            </Box>
+            
+            {/* Live Orders Table */ }
+            <Box sx={ {
+              overflow: 'hidden',
+              minWidth: 0,
+              flex: 1
+            } }>
+              <LiveOrdersTable orders={ liveOrders } />
+            </Box>
           </Box>
         ) }
       </Container>
