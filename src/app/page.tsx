@@ -66,6 +66,7 @@ export default function LandingPage ()
               sx={ {
                 textTransform: 'none',
                 bgcolor: '#ff6b35',
+                color: 'white',
                 '&:hover': { bgcolor: '#e55a2b' }
               } }
             >
@@ -200,6 +201,7 @@ export default function LandingPage ()
               px: 4,
               py: 1.5,
               bgcolor: '#ff6b35',
+              color: 'white',
               '&:hover': { bgcolor: '#e55a2b' }
             } }
           >

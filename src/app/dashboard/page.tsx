@@ -838,13 +838,13 @@ function DelayedOrdersCard ({ orders }: { orders: Order[] })
                   border: 1,
                   borderColor: (order.delayInfo.minutes || 0) > 30 ? 'error.main' : 'warning.main',
                   borderRadius: 1,
-                  bgcolor: (order.delayInfo.minutes || 0) > 30 ? 'error.main' : 'warning.light'
+                  bgcolor: (order.delayInfo.minutes || 0) > 30 ? 'error.main' : 'warning.main'
                 } }
               >
                 <Typography
                   variant="subtitle2"
                   sx={ {
-                    color: (order.delayInfo.minutes || 0) > 30 ? 'white' : 'black',
+                    color: 'white',
                     fontWeight: 'bold'
                   } }
                 >
@@ -853,7 +853,8 @@ function DelayedOrdersCard ({ orders }: { orders: Order[] })
                 <Typography
                   variant="body2"
                   sx={ {
-                    color: (order.delayInfo.minutes || 0) > 30 ? 'white' : 'text.secondary'
+                    color: 'white',
+                    opacity: 0.9
                   } }
                 >
                   { order.delayInfo.reason } ({ order.delayInfo.minutes } minutes)

@@ -272,6 +272,7 @@ export default function OrderDashboard ()
               onClick={ () => setCreateOrderOpen(true) }
               sx={ {
                 bgcolor: '#ff6b35',
+                color: 'white',
                 '&:hover': { bgcolor: '#e55a2b' }
               } }
             >
@@ -494,7 +495,7 @@ export default function OrderDashboard ()
                     updateOrderStatus(selectedOrder.id, nextStatus)
                   }
                 } }
-                sx={ { mt: 'auto' } }
+                sx={ { mt: 'auto', color: 'white' } }
               >
                 Mark as { statusLabels[ getNextStatus(selectedOrder.status)! ] }
               </Button>

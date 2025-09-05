@@ -24,7 +24,7 @@ import
   Dashboard,
   Close,
   Logout,
-  Settings
+  Person
 } from '@mui/icons-material'
 
 interface SidebarProps
@@ -65,6 +65,12 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
   const handleProfileClose = () =>
   {
     setProfileMenuAnchor(null)
+  }
+
+  const handleProfileMenuClick = () =>
+  {
+    setProfileMenuAnchor(null)
+    router.push('/profile')
   }
 
   const handleLogout = () =>
@@ -202,12 +208,9 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
             horizontal: 'right',
           } }
         >
-          <MenuItem onClick={ handleProfileClose } disabled>
-            <Settings sx={ { mr: 2 } } />
-            Settings
-            <Typography variant="caption" color="text.secondary" sx={ { ml: 1 } }>
-              Soon
-            </Typography>
+          <MenuItem onClick={ handleProfileMenuClick }>
+            <Person sx={ { mr: 2 } } />
+            Profile
           </MenuItem>
           <Divider />
           <MenuItem onClick={ handleLogout }>
