@@ -2,35 +2,31 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import
-  {
-    Box,
-    Drawer,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    IconButton,
-    Avatar,
-    Divider,
-    useTheme,
-    useMediaQuery,
-    Toolbar,
-    Menu,
-    MenuItem
-  } from '@mui/material'
+{
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  IconButton,
+  Avatar,
+  Divider,
+  Menu,
+  MenuItem
+} from '@mui/material'
 import
-  {
-    Restaurant,
-    Assignment,
-    Dashboard,
-    Menu as MenuIcon,
-    Close,
-    AccountCircle,
-    Logout,
-    Settings
-  } from '@mui/icons-material'
+{
+  Restaurant,
+  Assignment,
+  Dashboard,
+  Close,
+  AccountCircle,
+  Logout,
+  Settings
+} from '@mui/icons-material'
 
 interface SidebarProps
 {
@@ -57,8 +53,6 @@ const menuItems = [
 
 export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
 {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const router = useRouter()
   const pathname = usePathname()
   const { data: session } = useSession()
@@ -84,10 +78,8 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
   {
     if (!available) return
     router.push(path)
-    if (isMobile)
-    {
-      onMobileToggle()
-    }
+    // Close mobile drawer after navigation
+    onMobileToggle()
   }
 
   const drawerContent = (
@@ -103,11 +95,11 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
           gap: 2
         } }
       >
-        <Restaurant sx={ { fontSize: 32, color: 'primary.main' } } />
-        <Typography variant="h6" fontWeight="bold" color="primary.main">
+        <Restaurant sx={ { fontSize: 32, color: '#ff6b35' } } />
+        <Typography variant="h6" fontWeight="bold" sx={ { color: '#ff6b35' } }>
           RestaunaX
         </Typography>
-        { isMobile && (
+        <Box sx={ { display: { xs: 'block', md: 'none' } } }>
           <IconButton
             onClick={ onMobileToggle }
             sx={ { ml: 'auto' } }
@@ -115,7 +107,7 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
           >
             <Close />
           </IconButton>
-        ) }
+        </Box>
       </Box>
 
       {/* Navigation */ }
@@ -129,17 +121,17 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
               sx={ {
                 borderRadius: 2,
                 '&.Mui-selected': {
-                  backgroundColor: 'primary.main',
+                  backgroundColor: '#ff6b35',
                   color: 'white',
                   '&:hover': {
-                    backgroundColor: 'primary.dark',
+                    backgroundColor: '#e55a2b',
                   },
                   '& .MuiListItemIcon-root': {
                     color: 'white',
                   },
                 },
                 '&:hover': {
-                  backgroundColor: item.available ? 'action.hover' : 'transparent',
+                  backgroundColor: item.available ? '#f5f5f5' : 'transparent',
                 },
                 opacity: item.available ? 1 : 0.5
               } }
@@ -154,7 +146,7 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
                 } }
               />
               { !item.available && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={ { color: '#666666' } }>
                   Soon
                 </Typography>
               ) }
@@ -164,7 +156,7 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
       </List>
 
       {/* User Profile Section */ }
-      <Box sx={ { p: 2, borderTop: '1px solid', borderColor: 'divider' } }>
+      <Box sx={ { p: 2, borderTop: '1px solid #e0e0e0' } }>
         <ListItemButton
           onClick={ handleProfileClick }
           sx={ {
@@ -173,19 +165,28 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
           } }
         >
           <ListItemIcon sx={ { minWidth: 40 } }>
-            <Avatar sx={ { width: 32, height: 32, fontSize: '0.875rem' } }>
+            <Avatar sx={ { width: 32, height: 32, fontSize: '0.875rem', bgcolor: '#ff6b35' } }>
               { session?.user?.name?.charAt(0)?.toUpperCase() || 'U' }
             </Avatar>
           </ListItemIcon>
-          <Box sx={ { flex: 1, minWidth: 0 } }>
-            <Typography variant="subtitle2" noWrap>
+          <Box sx={ { flex: 1, minWidth: 0, overflow: 'hidden' } }>
+            <Typography variant="subtitle2" noWrap sx={ { color: 'black' } }>
               { session?.user?.name || 'User' }
             </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
+            <Typography
+              variant="caption"
+              sx={ {
+                color: '#666666',
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '100%'
+              } }
+            >
               { session?.user?.email }
             </Typography>
           </Box>
-          <AccountCircle />
         </ListItemButton>
 
         {/* Profile Menu */ }
@@ -237,6 +238,8 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: drawerWidth,
+            backgroundColor: 'white',
+            color: 'black'
           },
         } }
       >
@@ -252,7 +255,9 @@ export default function Sidebar ({ mobileOpen, onMobileToggle }: SidebarProps)
             boxSizing: 'border-box',
             width: drawerWidth,
             position: 'relative',
-            height: '100vh'
+            height: '100vh',
+            backgroundColor: 'white',
+            color: 'black'
           },
         } }
         open

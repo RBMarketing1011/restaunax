@@ -73,9 +73,10 @@ export default function SignUpPage ()
       setSuccess(true)
       // User will manually click button to go to sign in page
 
-    } catch (err: any)
+    } catch (err: unknown)
     {
-      setError(err.message || 'An error occurred. Please try again.')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.'
+      setError(errorMessage)
     } finally
     {
       setLoading(false)

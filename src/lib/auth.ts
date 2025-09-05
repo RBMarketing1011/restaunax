@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name,
-            accountId: accountId
+            accountId: accountId || ''
           }
         } catch (error)
         {
@@ -73,6 +73,10 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours - how often to update the session
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: '/auth/signin',
@@ -85,7 +89,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = user.email
         token.name = user.name
-        token.accountId = (user as any).accountId
+        token.accountId = user.accountId
       }
       return token
     },
@@ -96,7 +100,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.email = token.email as string
         session.user.name = token.name as string
-          ; (session.user as any).accountId = token.accountId as string
+        session.user.accountId = token.accountId as string
       }
       return session
     }

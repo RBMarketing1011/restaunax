@@ -53,7 +53,7 @@ function VerifyEmailForm ()
           setStatus('error')
           setMessage(data.message || 'Verification failed')
         }
-      } catch (error)
+      } catch
       {
         setStatus('error')
         setMessage('An error occurred during verification')
@@ -68,6 +68,7 @@ function VerifyEmailForm ()
     router.push('/auth/signin')
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleResendEmail = async () =>
   {
     // Implementation for resending verification email could go here

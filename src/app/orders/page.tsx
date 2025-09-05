@@ -11,16 +11,15 @@ import
   Button,
   Drawer,
   IconButton,
-  useTheme,
-  useMediaQuery,
   Tabs,
   Tab,
   CircularProgress,
   Alert,
-  Fab,
   Divider,
-  Chip
+  Chip,
+  useMediaQuery
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import
 {
   LocalShipping,
@@ -237,30 +236,59 @@ export default function OrderDashboard ()
     return null // Will redirect
   }
 
+  // Mobile actions for header
+  const mobileActions = (
+    <Box display="flex" gap={ 1 }>
+      <IconButton
+        color="inherit"
+        onClick={ () => setCreateOrderOpen(true) }
+        aria-label="add order"
+      >
+        <Add />
+      </IconButton>
+      <IconButton
+        color="inherit"
+        onClick={ fetchOrders }
+        disabled={ loading }
+        aria-label="refresh"
+      >
+        <Refresh />
+      </IconButton>
+    </Box>
+  )
+
   return (
-    <DashboardLayout title="Orders">
+    <DashboardLayout title="Orders" mobileActions={ mobileActions }>
       <Container maxWidth="lg" sx={ { py: 3 } }>
         {/* Header with Actions */ }
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={ 3 }>
-          <Typography variant="h4" component="h1" fontWeight="bold">
+          <Typography variant="h4" component="h1" fontWeight="bold" sx={ { color: 'black' } }>
             Orders Management
           </Typography>
-          <Box display="flex" gap={ 2 }>
+          <Box display="flex" gap={ 2 } sx={ { display: { xs: 'none', md: 'flex' } } }>
             <Button
               variant="contained"
               startIcon={ <Add /> }
               onClick={ () => setCreateOrderOpen(true) }
+              sx={ {
+                bgcolor: '#ff6b35',
+                '&:hover': { bgcolor: '#e55a2b' }
+              } }
             >
-              { isMobile ? 'New' : 'New Order' }
+              New Order
             </Button>
             <Button
               variant="outlined"
               startIcon={ <Refresh /> }
               onClick={ fetchOrders }
               disabled={ loading }
+              sx={ {
+                borderColor: '#ff6b35',
+                color: '#ff6b35',
+                '&:hover': { borderColor: '#e55a2b', bgcolor: '#fff5f1' }
+              } }
             >
-              { isMobile ? '' : 'Refresh' }
-              { isMobile && <Refresh /> }
+              Refresh
             </Button>
           </Box>
         </Box>
@@ -371,22 +399,6 @@ export default function OrderDashboard ()
           </Box>
         </TabPanel>
       </Container>
-
-      {/* Mobile Floating Action Button */ }
-      { isMobile && (
-        <Fab
-          color="primary"
-          onClick={ () => setCreateOrderOpen(true) }
-          sx={ {
-            position: 'fixed',
-            bottom: 16,
-            right: 16,
-            zIndex: 1000
-          } }
-        >
-          <Add />
-        </Fab>
-      ) }
 
       {/* Order Details Drawer */ }
       <Drawer

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useTheme, useMediaQuery, Box, AppBar, Toolbar, IconButton, Typography } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Box, AppBar, Toolbar, IconButton, Typography } from '@mui/material'
 import { Menu as MenuIcon } from '@mui/icons-material'
 import Sidebar from './Sidebar'
 
@@ -9,36 +9,53 @@ interface DashboardLayoutProps
 {
   children: React.ReactNode
   title?: string
+  mobileActions?: React.ReactNode
 }
 
-export default function DashboardLayout ({ children, title }: DashboardLayoutProps)
+export default function DashboardLayout ({ children, title, mobileActions }: DashboardLayoutProps)
 {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [ mobileOpen, setMobileOpen ] = useState(false)
+  const [ isMounted, setIsMounted ] = useState(false)
+
+  // Handle hydration
+  useEffect(() =>
+  {
+    setIsMounted(true)
+  }, [])
 
   const handleDrawerToggle = () =>
   {
     setMobileOpen(!mobileOpen)
   }
 
+  if (!isMounted)
+  {
+    // Return a basic layout structure during SSR
+    return (
+      <Box sx={ { display: 'flex', height: '100vh', bgcolor: 'white' } }>
+        <Box component="main" sx={ { flexGrow: 1, p: 3 } }>
+          { children }
+        </Box>
+      </Box>
+    )
+  }
+
   return (
-    <Box sx={ { display: 'flex', height: '100vh' } }>
+    <Box sx={ { display: 'flex', height: '100vh', bgcolor: 'white' } }>
       {/* Sidebar */ }
       <Sidebar mobileOpen={ mobileOpen } onMobileToggle={ handleDrawerToggle } />
 
       {/* Main content area */ }
       <Box sx={ { flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' } }>
-        {/* Mobile header with hamburger menu */ }
-        { isMobile && (
+        {/* Mobile header with hamburger menu - show on smaller screens */ }
+        <Box sx={ { display: { xs: 'block', md: 'none' } } }>
           <AppBar
             position="static"
             sx={ {
-              backgroundColor: 'background.paper',
-              color: 'text.primary',
+              backgroundColor: 'white',
+              color: 'black',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              borderBottom: '1px solid',
-              borderColor: 'divider'
+              borderBottom: '1px solid #e0e0e0'
             } }
           >
             <Toolbar>
@@ -51,12 +68,13 @@ export default function DashboardLayout ({ children, title }: DashboardLayoutPro
               >
                 <MenuIcon />
               </IconButton>
-              <Typography variant="h6" noWrap component="div">
+              <Typography variant="h6" noWrap component="div" sx={ { flexGrow: 1 } }>
                 { title || 'RestaunaX' }
               </Typography>
+              { mobileActions }
             </Toolbar>
           </AppBar>
-        ) }
+        </Box>
 
         {/* Page content */ }
         <Box
@@ -64,7 +82,8 @@ export default function DashboardLayout ({ children, title }: DashboardLayoutPro
           sx={ {
             flexGrow: 1,
             overflow: 'auto',
-            backgroundColor: 'background.default'
+            backgroundColor: 'white',
+            p: 3
           } }
         >
           { children }

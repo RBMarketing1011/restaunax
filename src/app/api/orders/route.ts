@@ -18,7 +18,7 @@ export async function GET (request: NextRequest)
       )
     }
 
-    const accountId = (session.user as any).accountId
+    const accountId = session.user.accountId
 
     if (!accountId)
     {
@@ -34,7 +34,7 @@ export async function GET (request: NextRequest)
     // Filter orders by user's account
     const whereClause = {
       accountId: accountId,
-      ...(status ? { status: status as any } : {})
+      ...(status ? { status: status as 'pending' | 'preparing' | 'ready' | 'delivered' } : {})
     }
 
     const orders = await prisma.order.findMany({
@@ -73,7 +73,7 @@ export async function POST (request: NextRequest)
       )
     }
 
-    const accountId = (session.user as any).accountId
+    const accountId = session.user.accountId
 
     if (!accountId)
     {
@@ -94,7 +94,7 @@ export async function POST (request: NextRequest)
         total,
         accountId: accountId, // Link to user's account
         items: {
-          create: items.map((item: any) => ({
+          create: items.map((item: { name: string; quantity: number; price: number }) => ({
             name: item.name,
             quantity: item.quantity,
             price: item.price

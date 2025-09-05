@@ -1,54 +1,30 @@
 'use client'
 
-import { ThemeProvider as MUIThemeProvider, createTheme, CssBaseline } from '@mui/material'
+import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles'
+import { CssBaseline } from '@mui/material'
 import { ReactNode } from 'react'
+import EmotionCacheProvider from './EmotionCacheProvider'
 
 const theme = createTheme({
   palette: {
+    mode: 'light',
     primary: {
-      main: '#ff6b35',
+      main: '#ff6b35', // Orange
     },
     secondary: {
-      main: '#004225',
+      main: '#000000', // Black
     },
     background: {
-      default: '#fafafa',
+      default: '#ffffff', // White
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#000000', // Black text
+      secondary: '#666666', // Gray text
     },
   },
   typography: {
     fontFamily: 'var(--font-geist-sans), Arial, sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 500,
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 500,
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          borderRadius: 6,
-        },
-      },
-    },
   },
 })
 
@@ -60,9 +36,11 @@ interface ThemeProviderProps
 export function ThemeProvider ({ children }: ThemeProviderProps)
 {
   return (
-    <MUIThemeProvider theme={ theme }>
-      <CssBaseline />
-      { children }
-    </MUIThemeProvider>
+    <EmotionCacheProvider>
+      <MUIThemeProvider theme={ theme }>
+        <CssBaseline />
+        { children }
+      </MUIThemeProvider>
+    </EmotionCacheProvider>
   )
 }

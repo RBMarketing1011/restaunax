@@ -11,12 +11,11 @@ import
   CardActions,
   Chip,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
+  // Dialog,
+  // DialogTitle,
+  // DialogContent,
   Drawer,
   IconButton,
-  useTheme,
   useMediaQuery,
   Tabs,
   Tab,
@@ -25,6 +24,7 @@ import
   Fab,
   Divider
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import
 {
   Restaurant,

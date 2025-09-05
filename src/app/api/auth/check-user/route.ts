@@ -32,7 +32,7 @@ export async function POST (request: NextRequest)
 
     return NextResponse.json({ unverified: false })
 
-  } catch (error)
+  } catch
   {
     return NextResponse.json({ unverified: false })
   }

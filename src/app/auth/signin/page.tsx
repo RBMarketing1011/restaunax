@@ -70,7 +70,7 @@ function SignInForm ()
             router.push('/auth/signin?error=verification')
             return
           }
-        } catch (e)
+        } catch
         {
           // If check fails, show generic error
         }
@@ -82,7 +82,7 @@ function SignInForm ()
         await getSession()
         router.push('/orders')
       }
-    } catch (err)
+    } catch
     {
       setError('An error occurred. Please try again.')
     } finally
@@ -148,7 +148,7 @@ function SignInForm ()
 
           <Divider sx={ { my: 3 } }>
             <Typography variant="body2" color="text.secondary">
-              Don't have an account?
+              Don&apos;t have an account?
             </Typography>
           </Divider>
 

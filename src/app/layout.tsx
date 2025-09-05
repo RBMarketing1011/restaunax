@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import Providers from "@/components/Providers"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -19,17 +21,19 @@ export const metadata: Metadata = {
   description: "Restaurant order management system built with Next.js and Material UI",
 }
 
-export default function RootLayout ({
+export default async function RootLayout ({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>)
 {
+  const session = await getServerSession(authOptions)
+
   return (
     <html lang="en">
       <body className={ `${ geistSans.variable } ${ geistMono.variable }` }>
         <ThemeProvider>
-          <Providers session={ null }>
+          <Providers session={ session }>
             { children }
           </Providers>
         </ThemeProvider>
