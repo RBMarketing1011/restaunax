@@ -208,7 +208,7 @@ export async function GET (request: NextRequest)
   try
   {
     // Only allow this in development
-    if (process.env.NODE_ENV === 'production')
+    if (process.env.NEXT_PUBLIC_NODE_ENV !== 'development')
     {
       return NextResponse.json(
         { message: 'Database reset is not allowed in production' },
@@ -218,10 +218,11 @@ export async function GET (request: NextRequest)
 
     const { searchParams } = new URL(request.url)
     const accountId = searchParams.get('accountId')
+    const userId = searchParams.get('userId')
 
     console.log('Starting database reset and reseed...')
 
-    if (accountId)
+    if (accountId && !userId)
     {
       // Seed specific account with orders for the last 30 days
       console.log(`Seeding account ${ accountId } with 30 days of order data...`)
@@ -289,6 +290,50 @@ export async function GET (request: NextRequest)
             from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
             to: new Date().toISOString()
           },
+          timestamp: new Date().toISOString()
+        },
+        { status: 200 }
+      )
+
+    } else if (userId && !accountId)
+    {
+      // Delete all data except the user and account
+      console.log('Cleaning database and leaving user and account data intact...')
+
+      // Find User
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      })
+
+      // find account
+      const account = await prisma.account.findUnique({
+        where: { id: user!.accountId! }
+      })
+
+      if (!user || !account)
+      {
+        return NextResponse.json(
+          { message: 'User or account not found', userId, accountId },
+          { status: 404 }
+        )
+      }
+
+      // Clear all data in the correct order (respecting foreign key constraints)
+      await prisma.verificationToken.deleteMany({})
+      await prisma.orderItem.deleteMany({})
+      await prisma.order.deleteMany({})
+      await prisma.account.deleteMany({
+        where: { id: { not: account.id } }
+      })
+      await prisma.user.deleteMany({
+        where: { id: { not: user.id } }
+      })
+
+      console.log('Database cleared successfully')
+
+      return NextResponse.json(
+        {
+          message: 'Database cleared successfully',
           timestamp: new Date().toISOString()
         },
         { status: 200 }

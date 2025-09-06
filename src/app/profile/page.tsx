@@ -25,13 +25,16 @@ import
   ListItemText,
   IconButton,
   CircularProgress,
-  Chip
+  Chip,
+  InputAdornment
 } from '@mui/material'
 import
 {
   Delete,
   PersonAdd,
-  Warning
+  Warning,
+  Visibility,
+  VisibilityOff
 } from '@mui/icons-material'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -59,10 +62,19 @@ export default function ProfilePage ()
   const { data: session, update } = useSession()
   const router = useRouter()
   const [ loading, setLoading ] = useState(true)
-  const [ saving, setSaving ] = useState(false)
   const [ userData, setUserData ] = useState<UserData | null>(null)
   const [ error, setError ] = useState<string | null>(null)
   const [ success, setSuccess ] = useState<string | null>(null)
+
+  // Individual loading states for each button
+  const [ savingProfile, setSavingProfile ] = useState(false)
+  const [ savingPassword, setSavingPassword ] = useState(false)
+  const [ savingAccountName, setSavingAccountName ] = useState(false)
+  const [ seedingAccount, setSeedingAccount ] = useState(false)
+  const [ deletingAccountData, setDeletingAccountData ] = useState(false)
+  const [ addingUser, setAddingUser ] = useState(false)
+  const [ removingUser, setRemovingUser ] = useState(false)
+  const [ deletingAccount, setDeletingAccount ] = useState(false)
 
   // Form states
   const [ name, setName ] = useState('')
@@ -71,6 +83,11 @@ export default function ProfilePage ()
   const [ newPassword, setNewPassword ] = useState('')
   const [ confirmPassword, setConfirmPassword ] = useState('')
   const [ accountName, setAccountName ] = useState('')
+
+  // Password visibility states
+  const [ showCurrentPassword, setShowCurrentPassword ] = useState(false)
+  const [ showNewPassword, setShowNewPassword ] = useState(false)
+  const [ showConfirmPassword, setShowConfirmPassword ] = useState(false)
 
   // Dialog states
   const [ deleteAccountDialog, setDeleteAccountDialog ] = useState(false)
@@ -127,7 +144,7 @@ export default function ProfilePage ()
 
     try
     {
-      setSaving(true)
+      setSavingProfile(true)
       setError(null)
 
       const response = await fetch('/api/user/profile', {
@@ -154,7 +171,7 @@ export default function ProfilePage ()
       setError(err.message)
     } finally
     {
-      setSaving(false)
+      setSavingProfile(false)
     }
   }
 
@@ -180,7 +197,7 @@ export default function ProfilePage ()
 
     try
     {
-      setSaving(true)
+      setSavingPassword(true)
       setError(null)
 
       const response = await fetch('/api/user/change-password', {
@@ -207,7 +224,7 @@ export default function ProfilePage ()
       setError(err.message)
     } finally
     {
-      setSaving(false)
+      setSavingPassword(false)
     }
   }
 
@@ -221,7 +238,7 @@ export default function ProfilePage ()
 
     try
     {
-      setSaving(true)
+      setSavingAccountName(true)
       setError(null)
 
       const response = await fetch('/api/account/update', {
@@ -245,7 +262,37 @@ export default function ProfilePage ()
       setError(err.message)
     } finally
     {
-      setSaving(false)
+      setSavingAccountName(false)
+    }
+  }
+
+  const handleSeedAccount = async (type: 'user' | 'account', id: string) =>
+  {
+    try
+    {
+      type === 'user' ? setDeletingAccountData(true) : setSeedingAccount(true)
+      setError(null)
+
+      const response = await fetch(`/api/dev/reset-db?${ type === 'user' ? 'userId' : 'accountId' }=${ id }`, {
+        method: 'GET'
+      })
+
+      if (!response.ok)
+      {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to seed account')
+      }
+
+      setSuccess('Account seeded successfully with sample data')
+    } catch (err: any)
+    {
+      setError(err.message)
+    } finally
+    {
+      type === 'user' ?
+        setDeletingAccountData(false)
+        :
+        setSeedingAccount(false)
     }
   }
 
@@ -259,7 +306,7 @@ export default function ProfilePage ()
 
     try
     {
-      setSaving(true)
+      setAddingUser(true)
       setError(null)
 
       const response = await fetch('/api/account/add-user', {
@@ -285,7 +332,7 @@ export default function ProfilePage ()
       setError(err.message)
     } finally
     {
-      setSaving(false)
+      setAddingUser(false)
     }
   }
 
@@ -293,7 +340,7 @@ export default function ProfilePage ()
   {
     try
     {
-      setSaving(true)
+      setDeletingAccount(true)
       setError(null)
 
       const response = await fetch('/api/account/delete', {
@@ -310,7 +357,7 @@ export default function ProfilePage ()
     } catch (err: any)
     {
       setError(err.message)
-      setSaving(false)
+      setDeletingAccount(false)
     }
   }
 
@@ -318,7 +365,7 @@ export default function ProfilePage ()
   {
     try
     {
-      setSaving(true)
+      setRemovingUser(true)
       setError(null)
 
       const response = await fetch('/api/account/remove-user', {
@@ -340,7 +387,7 @@ export default function ProfilePage ()
       setError(err.message)
     } finally
     {
-      setSaving(false)
+      setRemovingUser(false)
     }
   }
 
@@ -408,10 +455,10 @@ export default function ProfilePage ()
                   <Button
                     variant="contained"
                     onClick={ handleUpdateProfile }
-                    disabled={ saving }
+                    disabled={ savingProfile }
                     sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
                   >
-                    { saving ? <CircularProgress size={ 20 } color="inherit" /> : 'Update Profile' }
+                    { savingProfile ? <CircularProgress size={ 20 } color="inherit" /> : 'Update Profile' }
                   </Button>
                 </Box>
               </Stack>
@@ -425,33 +472,72 @@ export default function ProfilePage ()
               <Stack spacing={ 3 }>
                 <TextField
                   label="Current Password"
-                  type="password"
+                  type={ showCurrentPassword ? 'text' : 'password' }
                   value={ currentPassword }
                   onChange={ (e) => setCurrentPassword(e.target.value) }
                   fullWidth
+                  InputProps={ {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={ () => setShowCurrentPassword(!showCurrentPassword) }
+                          edge="end"
+                        >
+                          { showCurrentPassword ? <VisibilityOff /> : <Visibility /> }
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  } }
                 />
                 <TextField
                   label="New Password"
-                  type="password"
+                  type={ showNewPassword ? 'text' : 'password' }
                   value={ newPassword }
                   onChange={ (e) => setNewPassword(e.target.value) }
                   fullWidth
+                  InputProps={ {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={ () => setShowNewPassword(!showNewPassword) }
+                          edge="end"
+                        >
+                          { showNewPassword ? <VisibilityOff /> : <Visibility /> }
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  } }
                 />
                 <TextField
                   label="Confirm New Password"
-                  type="password"
+                  type={ showConfirmPassword ? 'text' : 'password' }
                   value={ confirmPassword }
                   onChange={ (e) => setConfirmPassword(e.target.value) }
                   fullWidth
+                  InputProps={ {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={ () => setShowConfirmPassword(!showConfirmPassword) }
+                          edge="end"
+                        >
+                          { showConfirmPassword ? <VisibilityOff /> : <Visibility /> }
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  } }
                 />
                 <Box>
                   <Button
                     variant="contained"
                     onClick={ handleChangePassword }
-                    disabled={ saving }
+                    disabled={ savingPassword }
                     sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
                   >
-                    { saving ? <CircularProgress size={ 20 } color="inherit" /> : 'Change Password' }
+                    { savingPassword ? <CircularProgress size={ 20 } color="inherit" /> : 'Change Password' }
                   </Button>
                 </Box>
               </Stack>
@@ -475,15 +561,69 @@ export default function ProfilePage ()
                       fullWidth
                       required
                     />
-                    <Box>
+
+                    <Box sx={ { display: 'flex', gap: 2, flexWrap: 'wrap' } }>
                       <Button
                         variant="contained"
                         onClick={ handleUpdateAccountName }
-                        disabled={ saving }
+                        disabled={ savingAccountName }
                         sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
                       >
-                        { saving ? <CircularProgress size={ 20 } color="inherit" /> : 'Update Account Name' }
+                        { savingAccountName ? <CircularProgress size={ 20 } color="inherit" /> : 'Update Account Name' }
                       </Button>
+
+                      { process.env.NEXT_PUBLIC_NODE_ENV === 'development' && (
+                        <>
+                          <Button
+                            variant="outlined"
+                            onClick={ () => handleSeedAccount('account', userData.accountId) }
+                            disabled={ seedingAccount }
+                            sx={ {
+                              borderColor: '#4caf50',
+                              color: '#4caf50',
+                              '&:hover': {
+                                borderColor: '#45a049',
+                                bgcolor: 'rgba(76, 175, 80, 0.04)'
+                              }
+                            } }
+                          >
+                            {
+                              seedingAccount ?
+                                <CircularProgress
+                                  size={ 20 }
+                                  color="inherit"
+                                />
+                                :
+                                'Seed Account'
+                            }
+                          </Button>
+
+                          <Button
+                            variant="outlined"
+                            onClick={ () => handleSeedAccount('user', userData.id) }
+                            disabled={ deletingAccountData }
+                            sx={ {
+                              bgcolor: '#e6352b',
+                              borderColor: '#e6352b',
+                              color: '#ffffff',
+                              '&:hover': {
+                                borderColor: '#b32922',
+                                bgcolor: '#b32922'
+                              }
+                            } }
+                          >
+                            {
+                              deletingAccountData ?
+                                <CircularProgress
+                                  size={ 20 }
+                                  color="inherit"
+                                />
+                                :
+                                'Delete Data'
+                            }
+                          </Button>
+                        </>
+                      ) }
                     </Box>
                   </Stack>
                 </CardContent>
@@ -514,7 +654,7 @@ export default function ProfilePage ()
                             <IconButton
                               edge="end"
                               onClick={ () => handleRemoveUser(user.id) }
-                              disabled={ saving }
+                              disabled={ removingUser }
                               color="error"
                             >
                               <Delete />
@@ -587,10 +727,10 @@ export default function ProfilePage ()
             <Button
               onClick={ handleAddUser }
               variant="contained"
-              disabled={ saving }
+              disabled={ addingUser }
               sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
             >
-              { saving ? <CircularProgress size={ 20 } color="inherit" /> : 'Send Invitation' }
+              { addingUser ? <CircularProgress size={ 20 } color="inherit" /> : 'Send Invitation' }
             </Button>
           </DialogActions>
         </Dialog>
@@ -613,9 +753,9 @@ export default function ProfilePage ()
               onClick={ handleDeleteAccount }
               color="error"
               variant="contained"
-              disabled={ saving }
+              disabled={ deletingAccount }
             >
-              { saving ? <CircularProgress size={ 20 } color="inherit" /> : 'Delete Account' }
+              { deletingAccount ? <CircularProgress size={ 20 } color="inherit" /> : 'Delete Account' }
             </Button>
           </DialogActions>
         </Dialog>

@@ -14,14 +14,17 @@ import
   Alert,
   CircularProgress,
   Link,
-  Divider
+  Divider,
+  InputAdornment,
+  IconButton
 } from '@mui/material'
-import { Restaurant } from '@mui/icons-material'
+import { Restaurant, Visibility, VisibilityOff } from '@mui/icons-material'
 
 function SignInForm ()
 {
   const [ email, setEmail ] = useState('')
   const [ password, setPassword ] = useState('')
+  const [ showPassword, setShowPassword ] = useState(false)
   const [ loading, setLoading ] = useState(false)
   const [ error, setError ] = useState('')
   const router = useRouter()
@@ -126,12 +129,25 @@ function SignInForm ()
             <TextField
               fullWidth
               label="Password"
-              type="password"
+              type={ showPassword ? 'text' : 'password' }
               value={ password }
               onChange={ (e) => setPassword(e.target.value) }
               required
               sx={ { mb: 3 } }
               disabled={ loading }
+              InputProps={ {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={ () => setShowPassword(!showPassword) }
+                      edge="end"
+                      disabled={ loading }
+                    >
+                      { showPassword ? <VisibilityOff /> : <Visibility /> }
+                    </IconButton>
+                  </InputAdornment>
+                )
+              } }
             />
 
             <Button
@@ -140,7 +156,7 @@ function SignInForm ()
               variant="contained"
               size="large"
               disabled={ loading }
-              sx={ { mb: 3, py: 1.5 } }
+              sx={ { mb: 3, py: 1.5, color: 'white' } }
             >
               { loading ? <CircularProgress size={ 24 } color="inherit" /> : 'Sign In' }
             </Button>

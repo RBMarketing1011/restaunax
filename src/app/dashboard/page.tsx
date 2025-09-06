@@ -68,11 +68,6 @@ interface FilterState
   orderType: string
 }
 
-interface ViewState
-{
-  currentView: 'dashboard' | 'liveOrders'
-}
-
 interface BucketData
 {
   x: string
@@ -211,14 +206,30 @@ const isDelayed = (order: Order): DelayInfo =>
   const orderTime = new Date(order.createdAt).getTime()
   const minutesElapsed = (now - orderTime) / (1000 * 60)
 
-  if (order.status === 'preparing' && minutesElapsed > 20)
+  // Don't flag delivered orders as delayed
+  if (order.status === 'delivered')
+  {
+    return { delayed: false }
+  }
+
+  // Pending orders that haven't been started in reasonable time
+  if (order.status === 'pending' && minutesElapsed > 10)
+  {
+    return { delayed: true, reason: 'Pending too long', minutes: Math.floor(minutesElapsed) }
+  }
+
+  // Preparing orders that are taking too long
+  if (order.status === 'preparing' && minutesElapsed > 30)
   {
     return { delayed: true, reason: 'Preparing too long', minutes: Math.floor(minutesElapsed) }
   }
-  if (order.status === 'ready' && minutesElapsed > 15)
+
+  // Ready orders waiting for pickup/delivery too long
+  if (order.status === 'ready' && minutesElapsed > 20)
   {
     return { delayed: true, reason: 'Ready too long', minutes: Math.floor(minutesElapsed) }
   }
+
   return { delayed: false }
 }
 
@@ -322,11 +333,9 @@ function KpiCards ({ orders }: { orders: Order[] })
   )
 }
 
-function FiltersBar ({ filters, onFiltersChange, viewState, onViewChange }: {
+function FiltersBar ({ filters, onFiltersChange }: {
   filters: FilterState,
-  onFiltersChange: (filters: FilterState) => void,
-  viewState: ViewState,
-  onViewChange: (view: ViewState) => void
+  onFiltersChange: (filters: FilterState) => void
 })
 {
   const [ filterModalOpen, setFilterModalOpen ] = useState(false)
@@ -425,39 +434,17 @@ function FiltersBar ({ filters, onFiltersChange, viewState, onViewChange }: {
         <Card sx={ { mb: 3 } }>
           <CardContent>
             <Stack direction="row" spacing={ 2 } alignItems="center" justifyContent="space-between">
-              { viewState.currentView === 'dashboard' && (
-                <IconButton
-                  onClick={ () => setFilterModalOpen(true) }
-                  sx={ {
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    '&:hover': { bgcolor: 'primary.dark' }
-                  } }
-                >
-                  <FilterListIcon />
-                </IconButton>
-              ) }
-
-              <ToggleButtonGroup
-                value={ viewState.currentView }
-                exclusive
-                onChange={ (_event, newView) =>
-                {
-                  if (newView !== null)
-                  {
-                    onViewChange({ currentView: newView })
-                  }
+              <IconButton
+                onClick={ () => setFilterModalOpen(true) }
+                sx={ {
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'primary.dark' }
                 } }
-                aria-label="view type"
-                size="small"
               >
-                <ToggleButton value="dashboard" aria-label="dashboard">
-                  Dashboard
-                </ToggleButton>
-                <ToggleButton value="liveOrders" aria-label="live orders">
-                  Live Orders
-                </ToggleButton>
-              </ToggleButtonGroup>
+                <FilterListIcon />
+              </IconButton>
+              <Typography variant="h6">Dashboard Filters</Typography>
             </Stack>
           </CardContent>
         </Card>
@@ -471,83 +458,55 @@ function FiltersBar ({ filters, onFiltersChange, viewState, onViewChange }: {
     <Card sx={ { mb: 3 } }>
       <CardContent>
         <Stack direction={ { xs: 'column', md: 'row' } } spacing={ 2 } alignItems="center">
-          { viewState.currentView === 'dashboard' && (
-            <>
-              <FormControl sx={ { minWidth: 150 } }>
-                <InputLabel>Time Range</InputLabel>
-                <Select
-                  value={ filters.timeRange }
-                  onChange={ handleTimeRangeChange }
-                  label="Time Range"
-                >
-                  <MenuItem value="today">Today</MenuItem>
-                  <MenuItem value="last7days">Last 7 days</MenuItem>
-                  <MenuItem value="last30days">Last 30 days</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl sx={ { minWidth: 200 } }>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  multiple
-                  value={ filters.statuses }
-                  onChange={ handleStatusChange }
-                  input={ <OutlinedInput label="Status" /> }
-                >
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="preparing">Preparing</MenuItem>
-                  <MenuItem value="ready">Ready</MenuItem>
-                  <MenuItem value="delivered">Delivered</MenuItem>
-                </Select>
-              </FormControl>
-
-              <ToggleButtonGroup
-                value={ filters.orderType }
-                exclusive
-                onChange={ handleOrderTypeChange }
-                aria-label="order type"
-              >
-                <ToggleButton value="all" aria-label="all">
-                  All
-                </ToggleButton>
-                <ToggleButton value="pickup" aria-label="pickup">
-                  Pickup
-                </ToggleButton>
-                <ToggleButton value="delivery" aria-label="delivery">
-                  Delivery
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </>
-          ) }
-
-          <Box sx={ { ml: 'auto' } }>
-            <ToggleButtonGroup
-              value={ viewState.currentView }
-              exclusive
-              onChange={ (_event, newView) =>
-              {
-                if (newView !== null)
-                {
-                  onViewChange({ currentView: newView })
-                }
-              } }
-              aria-label="view type"
+          <FormControl sx={ { minWidth: 150 } }>
+            <InputLabel>Time Range</InputLabel>
+            <Select
+              value={ filters.timeRange }
+              onChange={ handleTimeRangeChange }
+              label="Time Range"
             >
-              <ToggleButton value="dashboard" aria-label="dashboard">
-                Dashboard
-              </ToggleButton>
-              <ToggleButton value="liveOrders" aria-label="live orders">
-                View Live Orders
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
+              <MenuItem value="today">Today</MenuItem>
+              <MenuItem value="last7days">Last 7 days</MenuItem>
+              <MenuItem value="last30days">Last 30 days</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl sx={ { minWidth: 200 } }>
+            <InputLabel>Status</InputLabel>
+            <Select
+              multiple
+              value={ filters.statuses }
+              onChange={ handleStatusChange }
+              input={ <OutlinedInput label="Status" /> }
+            >
+              <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="preparing">Preparing</MenuItem>
+              <MenuItem value="ready">Ready</MenuItem>
+              <MenuItem value="delivered">Delivered</MenuItem>
+            </Select>
+          </FormControl>
+
+          <ToggleButtonGroup
+            value={ filters.orderType }
+            exclusive
+            onChange={ handleOrderTypeChange }
+            aria-label="order type"
+          >
+            <ToggleButton value="all" aria-label="all">
+              All
+            </ToggleButton>
+            <ToggleButton value="pickup" aria-label="pickup">
+              Pickup
+            </ToggleButton>
+            <ToggleButton value="delivery" aria-label="delivery">
+              Delivery
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Stack>
       </CardContent>
     </Card>
   )
-}
-
-function StatusPieChart ({ orders }: { orders: Order[] })
+} function StatusPieChart ({ orders }: { orders: Order[] })
 {
   const statusCounts = groupByStatus(orders)
   const data = Object.entries(statusCounts)
@@ -719,7 +678,7 @@ function LiveOrdersTable ({ orders }: { orders: Order[] })
 
   return (
     <Card sx={ { height: { xs: 'auto', md: 'auto' }, display: 'flex', flexDirection: 'column' } }>
-      <CardHeader title="Live Orders" />
+      <CardHeader title="Orders" />
       <CardContent sx={ { p: 0, flex: 1, overflow: 'hidden' } }>
         <TableContainer sx={ {
           height: { xs: '60vh', md: '500px' },
@@ -819,6 +778,17 @@ function DelayedOrdersCard ({ orders }: { orders: Order[] })
     .map(order => ({ ...order, delayInfo: isDelayed(order) }))
     .filter(order => order.delayInfo.delayed)
 
+  // Debug logging
+  console.log('DelayedOrdersCard - Total orders:', orders.length)
+  console.log('DelayedOrdersCard - Orders with delay info:', orders.map(order => ({
+    id: order.id,
+    status: order.status,
+    createdAt: order.createdAt,
+    minutesOld: Math.floor((new Date().getTime() - new Date(order.createdAt).getTime()) / (1000 * 60)),
+    delayInfo: isDelayed(order)
+  })))
+  console.log('DelayedOrdersCard - Delayed orders count:', delayedOrders.length)
+
   return (
     <Card>
       <CardHeader
@@ -881,10 +851,6 @@ export default function OrdersDashboard ()
     timeRange: 'today',
     statuses: [],
     orderType: 'all'
-  })
-
-  const [ viewState, setViewState ] = useState<ViewState>({
-    currentView: 'dashboard'
   })
 
   // Redirect to signin if not authenticated
@@ -982,7 +948,7 @@ export default function OrdersDashboard ()
         {/* Header */ }
         <Box mb={ 3 }>
           <Typography variant="h4" component="h1" fontWeight="bold" sx={ { color: 'black' } }>
-            { viewState.currentView === 'dashboard' ? 'Dashboard' : 'Live Orders' }
+            Dashboard
           </Typography>
         </Box>
 
@@ -998,72 +964,43 @@ export default function OrdersDashboard ()
         <FiltersBar
           filters={ filters }
           onFiltersChange={ setFilters }
-          viewState={ viewState }
-          onViewChange={ setViewState }
         />
 
-        { viewState.currentView === 'dashboard' ? (
-          <>
-            {/* KPI Cards */ }
-            <KpiCards orders={ filteredOrders } />
+        {/* Dashboard Content */ }
+        <>
+          {/* KPI Cards */ }
+          <KpiCards orders={ filteredOrders } />
 
-            {/* Charts */ }
-            <Box sx={ { display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' } }>
-              <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
-                <OrdersOverTimeChart orders={ filteredOrders } timeRange={ filters.timeRange } />
-              </Box>
-              <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
-                <PickupVsDeliveryChart orders={ filteredOrders } />
-              </Box>
-              <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
-                <TopItemsChart orders={ filteredOrders } />
-              </Box>
+          {/* Charts */ }
+          <Box sx={ { display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' } }>
+            <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
+              <OrdersOverTimeChart orders={ filteredOrders } timeRange={ filters.timeRange } />
             </Box>
+            <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
+              <PickupVsDeliveryChart orders={ filteredOrders } />
+            </Box>
+            <Box sx={ { flex: { xs: '1 1 100%', lg: '1 1 32%' } } }>
+              <TopItemsChart orders={ filteredOrders } />
+            </Box>
+          </Box>
 
-            {/* Tables */ }
-            <Box sx={ {
-              display: 'flex',
-              gap: 3,
-              flexWrap: 'wrap',
-              overflow: 'hidden',
-              width: '100%'
-            } }>
-              <Box sx={ {
-                flex: { xs: '1 1 100%' },
-                overflow: 'hidden',
-                minWidth: 0
-              } }>
-                <LiveOrdersTable orders={ filteredOrders } />
-              </Box>
-            </Box>
-          </>
-        ) : (
-          /* Live Orders View */
+          {/* Tables */ }
           <Box sx={ {
             display: 'flex',
-            flexDirection: 'column',
             gap: 3,
+            flexWrap: 'wrap',
             overflow: 'hidden',
             width: '100%'
           } }>
-            {/* Delayed Orders Card - Show urgent issues first */ }
             <Box sx={ {
+              flex: { xs: '1 1 100%' },
               overflow: 'hidden',
               minWidth: 0
             } }>
-              <DelayedOrdersCard orders={ liveOrders } />
-            </Box>
-
-            {/* Live Orders Table */ }
-            <Box sx={ {
-              overflow: 'hidden',
-              minWidth: 0,
-              flex: 1
-            } }>
-              <LiveOrdersTable orders={ liveOrders } />
+              <LiveOrdersTable orders={ filteredOrders } />
             </Box>
           </Box>
-        ) }
+        </>
       </Container>
     </DashboardLayout>
   )

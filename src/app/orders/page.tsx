@@ -73,6 +73,35 @@ const statusLabels = {
   delivered: 'Delivered'
 }
 
+// Check if an order is delayed
+const isDelayed = (order: Order): boolean =>
+{
+  const now = new Date()
+  const orderTime = new Date(order.createdAt)
+  const diffMinutes = (now.getTime() - orderTime.getTime()) / (1000 * 60)
+
+  // Orders are considered delayed based on status and time
+  switch (order.status)
+  {
+    case 'pending':
+      return diffMinutes > 10 // Pending for more than 10 minutes
+    case 'preparing':
+      return diffMinutes > 30 // Preparing for more than 30 minutes
+    case 'ready':
+      return diffMinutes > 15 // Ready for more than 15 minutes
+    default:
+      return false
+  }
+}
+
+// Check if an order is from today
+const isToday = (orderDate: string | Date): boolean =>
+{
+  const order = new Date(orderDate)
+  const today = new Date()
+  return order.toDateString() === today.toDateString()
+}
+
 export default function OrderDashboard ()
 {
   const { data: session, status } = useSession()
@@ -141,7 +170,9 @@ export default function OrderDashboard ()
 
   const getOrdersByStatus = (status: OrderStatus) =>
   {
-    return orders.filter(order => order.status === status)
+    return orders
+      .filter(order => order.status === status)
+      .filter(order => isToday(order.createdAt)) // Only show today's orders
   }
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) =>
@@ -336,11 +367,12 @@ export default function OrderDashboard ()
                 order={ order }
                 onOrderClick={ handleOrderClick }
                 onStatusUpdate={ updateOrderStatus }
+                isDelayed={ isDelayed(order) }
               />
             )) }
             { getOrdersByStatus('pending').length === 0 && (
               <Typography color="text.secondary" textAlign="center" py={ 4 }>
-                No pending orders
+                No pending orders for today
               </Typography>
             ) }
           </Box>
@@ -354,11 +386,12 @@ export default function OrderDashboard ()
                 order={ order }
                 onOrderClick={ handleOrderClick }
                 onStatusUpdate={ updateOrderStatus }
+                isDelayed={ isDelayed(order) }
               />
             )) }
             { getOrdersByStatus('preparing').length === 0 && (
               <Typography color="text.secondary" textAlign="center" py={ 4 }>
-                No orders being prepared
+                No orders being prepared today
               </Typography>
             ) }
           </Box>
@@ -372,11 +405,12 @@ export default function OrderDashboard ()
                 order={ order }
                 onOrderClick={ handleOrderClick }
                 onStatusUpdate={ updateOrderStatus }
+                isDelayed={ isDelayed(order) }
               />
             )) }
             { getOrdersByStatus('ready').length === 0 && (
               <Typography color="text.secondary" textAlign="center" py={ 4 }>
-                No orders ready
+                No orders ready today
               </Typography>
             ) }
           </Box>
@@ -394,7 +428,7 @@ export default function OrderDashboard ()
             )) }
             { getOrdersByStatus('delivered').length === 0 && (
               <Typography color="text.secondary" textAlign="center" py={ 4 }>
-                No delivered orders
+                No delivered orders today
               </Typography>
             ) }
           </Box>

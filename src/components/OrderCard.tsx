@@ -21,6 +21,7 @@ interface OrderCardProps
   order: Order
   onOrderClick: (order: Order) => void
   onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void
+  isDelayed?: boolean
 }
 
 const getStatusIcon = (orderType: string) =>
@@ -47,7 +48,7 @@ const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null =>
   return statusFlow[ currentStatus ]
 }
 
-export default function OrderCard ({ order, onOrderClick, onStatusUpdate }: OrderCardProps)
+export default function OrderCard ({ order, onOrderClick, onStatusUpdate, isDelayed = false }: OrderCardProps)
 {
   return (
     <Card
@@ -55,11 +56,63 @@ export default function OrderCard ({ order, onOrderClick, onStatusUpdate }: Orde
         mb: 2,
         cursor: 'pointer',
         '&:hover': { elevation: 4 },
-        transition: 'box-shadow 0.2s'
+        transition: 'box-shadow 0.2s',
+        position: 'relative',
+        overflow: 'hidden'
       } }
       onClick={ () => onOrderClick(order) }
     >
-      <CardContent sx={ { pb: 1 } }>
+      {/* Delayed Watermark - Mobile */ }
+      { isDelayed && (
+        <Box
+          sx={ {
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-25deg)',
+            fontSize: '3.5rem',
+            fontWeight: '900',
+            color: 'transparent',
+            WebkitTextStroke: '2px rgba(211, 47, 47, 0.3)',
+            textStroke: '2px rgba(211, 47, 47, 0.3)',
+            zIndex: 1,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            textTransform: 'uppercase',
+            letterSpacing: '0.2em',
+            display: { xs: 'block', md: 'none' }
+          } }
+        >
+          DELAYED
+        </Box>
+      ) }
+
+      {/* Delayed Watermark - Desktop/Laptop */ }
+      { isDelayed && (
+        <Box
+          sx={ {
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-25deg)',
+            fontSize: { md: '4rem' },
+            fontWeight: '900',
+            color: 'transparent',
+            WebkitTextStroke: '3px rgba(211, 47, 47, 0.3)',
+            textStroke: '3px rgba(211, 47, 47, 0.3)',
+            zIndex: 1,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            textTransform: 'uppercase',
+            letterSpacing: '0.3em',
+            display: { xs: 'none', md: 'block' }
+          } }
+        >
+          DELAYED
+        </Box>
+      ) }
+
+      <CardContent sx={ { pb: 1, position: 'relative', zIndex: 2 } }>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={ 1 }>
           <Typography variant="h6" component="h3">
             { order.customerName }
@@ -77,7 +130,14 @@ export default function OrderCard ({ order, onOrderClick, onStatusUpdate }: Orde
         </Typography>
 
         <Typography variant="body2" color="text.secondary" mb={ 1 }>
-          { new Date(order.createdAt).toLocaleString() }
+          { new Date(order.createdAt).toLocaleString('en-US', {
+            month: 'numeric',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }) }
         </Typography>
 
         <Typography variant="body2" color="text.secondary" mb={ 2 }>
@@ -85,7 +145,7 @@ export default function OrderCard ({ order, onOrderClick, onStatusUpdate }: Orde
         </Typography>
 
         <Box sx={ { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }>
-          <Typography variant="h6" color="primary">
+          <Typography variant="h6" color="primary.main" fontWeight="bold">
             ${ order.total.toFixed(2) }
           </Typography>
 
@@ -94,7 +154,7 @@ export default function OrderCard ({ order, onOrderClick, onStatusUpdate }: Orde
               <Button
                 size="small"
                 variant="contained"
-                onClick={ (e) =>
+                onClick={ (e: React.MouseEvent) =>
                 {
                   e.stopPropagation()
                   const nextStatus = getNextStatus(order.status)

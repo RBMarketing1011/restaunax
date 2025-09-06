@@ -13,9 +13,11 @@ import
   Alert,
   CircularProgress,
   Link,
-  Divider
+  Divider,
+  InputAdornment,
+  IconButton
 } from '@mui/material'
-import { Restaurant } from '@mui/icons-material'
+import { Restaurant, Visibility, VisibilityOff } from '@mui/icons-material'
 
 export default function SignUpPage ()
 {
@@ -23,6 +25,8 @@ export default function SignUpPage ()
   const [ email, setEmail ] = useState('')
   const [ password, setPassword ] = useState('')
   const [ confirmPassword, setConfirmPassword ] = useState('')
+  const [ showPassword, setShowPassword ] = useState(false)
+  const [ showConfirmPassword, setShowConfirmPassword ] = useState(false)
   const [ loading, setLoading ] = useState(false)
   const [ error, setError ] = useState('')
   const [ success, setSuccess ] = useState(false)
@@ -105,6 +109,7 @@ export default function SignUpPage ()
             <Button
               variant="contained"
               onClick={ () => router.push('/auth/signin') }
+              sx={ { color: 'white' } }
             >
               Go to Sign In
             </Button>
@@ -159,24 +164,50 @@ export default function SignUpPage ()
             <TextField
               fullWidth
               label="Password"
-              type="password"
+              type={ showPassword ? 'text' : 'password' }
               value={ password }
               onChange={ (e) => setPassword(e.target.value) }
               required
               sx={ { mb: 3 } }
               disabled={ loading }
               helperText="Must be at least 6 characters long"
+              InputProps={ {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={ () => setShowPassword(!showPassword) }
+                      edge="end"
+                      disabled={ loading }
+                    >
+                      { showPassword ? <VisibilityOff /> : <Visibility /> }
+                    </IconButton>
+                  </InputAdornment>
+                )
+              } }
             />
 
             <TextField
               fullWidth
               label="Confirm Password"
-              type="password"
+              type={ showConfirmPassword ? 'text' : 'password' }
               value={ confirmPassword }
               onChange={ (e) => setConfirmPassword(e.target.value) }
               required
               sx={ { mb: 3 } }
               disabled={ loading }
+              InputProps={ {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={ () => setShowConfirmPassword(!showConfirmPassword) }
+                      edge="end"
+                      disabled={ loading }
+                    >
+                      { showConfirmPassword ? <VisibilityOff /> : <Visibility /> }
+                    </IconButton>
+                  </InputAdornment>
+                )
+              } }
             />
 
             <Button
@@ -185,7 +216,7 @@ export default function SignUpPage ()
               variant="contained"
               size="large"
               disabled={ loading }
-              sx={ { mb: 3, py: 1.5 } }
+              sx={ { mb: 3, py: 1.5, color: 'white' } }
             >
               { loading ? <CircularProgress size={ 24 } color="inherit" /> : 'Create Account' }
             </Button>
