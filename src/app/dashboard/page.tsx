@@ -58,7 +58,6 @@ import
 } from 'recharts'
 import DashboardLayout from '@/components/DashboardLayout'
 import { Order } from '@/types/order'
-import { sampleOrders } from '@/lib/sampleData'
 
 // Types
 interface FilterState
@@ -845,7 +844,6 @@ export default function OrdersDashboard ()
   const [ orders, setOrders ] = useState<Order[]>([])
   const [ loading, setLoading ] = useState(true)
   const [ error, setError ] = useState<string | null>(null)
-  const [ demoMode, setDemoMode ] = useState(false)
 
   const [ filters, setFilters ] = useState<FilterState>({
     timeRange: 'today',
@@ -868,28 +866,16 @@ export default function OrdersDashboard ()
       const response = await fetch('/api/orders')
       if (!response.ok)
       {
-        if (response.status === 500)
-        {
-          setDemoMode(true)
-          setOrders(sampleOrders)
-          setError('Database connection failed. Using demo data.')
-        } else
-        {
-          throw new Error('Failed to fetch orders')
-        }
-      } else
-      {
-        const data = await response.json()
-        setOrders(data)
-        setDemoMode(false)
-        setError(null)
+        throw new Error('Failed to fetch orders')
       }
+      const data = await response.json()
+      setOrders(data)
+      setError(null)
     } catch (err)
     {
       console.error('Error fetching orders:', err)
-      setDemoMode(true)
-      setOrders(sampleOrders)
-      setError('Failed to connect to database. Using demo data.')
+      setError('Failed to fetch orders. Please try again.')
+      setOrders([])
     } finally
     {
       setLoading(false)
@@ -954,9 +940,8 @@ export default function OrdersDashboard ()
 
         {/* Error Alert */ }
         { error && (
-          <Alert severity="warning" sx={ { mb: 3 } }>
+          <Alert severity="error" sx={ { mb: 3 } }>
             { error }
-            { demoMode && " - All data is for demonstration purposes." }
           </Alert>
         ) }
 

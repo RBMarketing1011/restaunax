@@ -33,7 +33,6 @@ import { Order, OrderStatus } from '@/types/order'
 import CreateOrderDialog from '@/components/CreateOrderDialog'
 import DashboardLayout from '@/components/DashboardLayout'
 import OrderCard from '@/components/OrderCard'
-import { sampleOrders } from '@/lib/sampleData'
 
 interface TabPanelProps
 {
@@ -112,7 +111,6 @@ export default function OrderDashboard ()
   const [ error, setError ] = useState<string | null>(null)
   const [ tabValue, setTabValue ] = useState(0)
   const [ createOrderOpen, setCreateOrderOpen ] = useState(false)
-  const [ demoMode, setDemoMode ] = useState(false)
   const [ drawerOpen, setDrawerOpen ] = useState(false)
 
   const theme = useTheme()
@@ -133,30 +131,16 @@ export default function OrderDashboard ()
       const response = await fetch('/api/orders')
       if (!response.ok)
       {
-        if (response.status === 500)
-        {
-          // Fallback to demo mode if database connection fails
-          setDemoMode(true)
-          setOrders(sampleOrders)
-          setError('Database connection failed. Using demo data.')
-        } else
-        {
-          throw new Error('Failed to fetch orders')
-        }
-      } else
-      {
-        const data = await response.json()
-        setOrders(data)
-        setDemoMode(false)
-        setError(null)
+        throw new Error('Failed to fetch orders')
       }
+      const data = await response.json()
+      setOrders(data)
+      setError(null)
     } catch (err)
     {
       console.error('Error fetching orders:', err)
-      // Fallback to demo mode
-      setDemoMode(true)
-      setOrders(sampleOrders)
-      setError('Failed to connect to database. Using demo data.')
+      setError('Failed to fetch orders. Please try again.')
+      setOrders([])
     } finally
     {
       setLoading(false)
@@ -177,18 +161,6 @@ export default function OrderDashboard ()
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) =>
   {
-    if (demoMode)
-    {
-      // In demo mode, update local state
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      )
-      setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
-      return
-    }
-
     try
     {
       const response = await fetch(`/api/orders/${ orderId }`, {
@@ -328,18 +300,15 @@ export default function OrderDashboard ()
         {/* Error Alert */ }
         { error && (
           <Alert
-            severity="warning"
+            severity="error"
             sx={ { mb: 3 } }
             action={
-              demoMode && (
-                <Button color="inherit" size="small" onClick={ fetchOrders }>
-                  Try Again
-                </Button>
-              )
+              <Button color="inherit" size="small" onClick={ fetchOrders }>
+                Try Again
+              </Button>
             }
           >
             { error }
-            { demoMode && " - All changes are temporary and won't be saved." }
           </Alert>
         ) }
 

@@ -18,9 +18,7 @@ export default withAuth(
         const protectedPaths = [
           '/dashboard',
           '/orders',
-          '/menu',
-          '/settings',
-          '/analytics'
+          '/profile',
         ]
 
         // Check if the current path is protected

@@ -20,9 +20,6 @@ import
   DialogTitle,
   DialogContent,
   DialogActions,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
   CircularProgress,
   Chip,
@@ -31,7 +28,6 @@ import
 import
 {
   Delete,
-  PersonAdd,
   Warning,
   Visibility,
   VisibilityOff
@@ -72,8 +68,6 @@ export default function ProfilePage ()
   const [ savingAccountName, setSavingAccountName ] = useState(false)
   const [ seedingAccount, setSeedingAccount ] = useState(false)
   const [ deletingAccountData, setDeletingAccountData ] = useState(false)
-  const [ addingUser, setAddingUser ] = useState(false)
-  const [ removingUser, setRemovingUser ] = useState(false)
   const [ deletingAccount, setDeletingAccount ] = useState(false)
 
   // Form states
@@ -91,8 +85,6 @@ export default function ProfilePage ()
 
   // Dialog states
   const [ deleteAccountDialog, setDeleteAccountDialog ] = useState(false)
-  const [ addUserDialog, setAddUserDialog ] = useState(false)
-  const [ newUserEmail, setNewUserEmail ] = useState('')
 
   // Redirect to signin if not authenticated
   useEffect(() =>
@@ -296,46 +288,6 @@ export default function ProfilePage ()
     }
   }
 
-  const handleAddUser = async () =>
-  {
-    if (!newUserEmail.trim())
-    {
-      setError('Email is required')
-      return
-    }
-
-    try
-    {
-      setAddingUser(true)
-      setError(null)
-
-      const response = await fetch('/api/account/add-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: newUserEmail.trim()
-        })
-      })
-
-      if (!response.ok)
-      {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to add user')
-      }
-
-      setSuccess('User invitation sent successfully')
-      setNewUserEmail('')
-      setAddUserDialog(false)
-      await fetchUserData()
-    } catch (err: any)
-    {
-      setError(err.message)
-    } finally
-    {
-      setAddingUser(false)
-    }
-  }
-
   const handleDeleteAccount = async () =>
   {
     try
@@ -358,36 +310,6 @@ export default function ProfilePage ()
     {
       setError(err.message)
       setDeletingAccount(false)
-    }
-  }
-
-  const handleRemoveUser = async (userId: string) =>
-  {
-    try
-    {
-      setRemovingUser(true)
-      setError(null)
-
-      const response = await fetch('/api/account/remove-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      })
-
-      if (!response.ok)
-      {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to remove user')
-      }
-
-      setSuccess('User removed successfully')
-      await fetchUserData()
-    } catch (err: any)
-    {
-      setError(err.message)
-    } finally
-    {
-      setRemovingUser(false)
     }
   }
 
@@ -629,56 +551,6 @@ export default function ProfilePage ()
                 </CardContent>
               </Card>
 
-              {/* Account Users */ }
-              <Card>
-                <CardHeader
-                  title="Account Users"
-                  action={
-                    <Button
-                      variant="outlined"
-                      startIcon={ <PersonAdd /> }
-                      onClick={ () => setAddUserDialog(true) }
-                      sx={ { borderColor: '#ff6b35', color: '#ff6b35' } }
-                    >
-                      Add User
-                    </Button>
-                  }
-                />
-                <CardContent>
-                  <List>
-                    { userData.account?.users.map((user) => (
-                      <ListItem
-                        key={ user.id }
-                        secondaryAction={
-                          user.id !== userData.id ? (
-                            <IconButton
-                              edge="end"
-                              onClick={ () => handleRemoveUser(user.id) }
-                              disabled={ removingUser }
-                              color="error"
-                            >
-                              <Delete />
-                            </IconButton>
-                          ) : (
-                            <Chip
-                              label="Owner"
-                              size="small"
-                              color="primary"
-                              sx={ { color: 'white' } }
-                            />
-                          )
-                        }
-                      >
-                        <ListItemText
-                          primary={ user.name }
-                          secondary={ user.email }
-                        />
-                      </ListItem>
-                    )) }
-                  </List>
-                </CardContent>
-              </Card>
-
               {/* Danger Zone */ }
               <Card sx={ { borderColor: 'error.main', borderWidth: 1, borderStyle: 'solid' } }>
                 <CardHeader
@@ -705,35 +577,6 @@ export default function ProfilePage ()
             </>
           ) }
         </Stack>
-
-        {/* Add User Dialog */ }
-        <Dialog open={ addUserDialog } onClose={ () => setAddUserDialog(false) } maxWidth="sm" fullWidth>
-          <DialogTitle>Add User to Account</DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Email Address"
-              type="email"
-              fullWidth
-              variant="outlined"
-              value={ newUserEmail }
-              onChange={ (e) => setNewUserEmail(e.target.value) }
-              sx={ { mt: 2 } }
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={ () => setAddUserDialog(false) }>Cancel</Button>
-            <Button
-              onClick={ handleAddUser }
-              variant="contained"
-              disabled={ addingUser }
-              sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
-            >
-              { addingUser ? <CircularProgress size={ 20 } color="inherit" /> : 'Send Invitation' }
-            </Button>
-          </DialogActions>
-        </Dialog>
 
         {/* Delete Account Dialog */ }
         <Dialog open={ deleteAccountDialog } onClose={ () => setDeleteAccountDialog(false) }>
