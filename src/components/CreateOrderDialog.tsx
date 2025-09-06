@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import
 {
   Dialog,
@@ -83,7 +83,7 @@ export default function CreateOrderDialog ({ open, onClose, onOrderCreated }: Cr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
         },
         body: JSON.stringify({
           customerName,

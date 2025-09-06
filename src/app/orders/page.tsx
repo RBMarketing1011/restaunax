@@ -130,7 +130,8 @@ export default function OrderDashboard ()
       setLoading(true)
       const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/orders`, {
         headers: {
-          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
         }
       })
       if (!response.ok)
@@ -171,7 +172,7 @@ export default function OrderDashboard ()
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
         },
         body: JSON.stringify({ status: newStatus }),
       })

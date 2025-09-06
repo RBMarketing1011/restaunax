@@ -31,7 +31,6 @@ import
   VisibilityOff
 } from '@mui/icons-material'
 import DashboardLayout from '@/components/DashboardLayout'
-import { apiRequest } from '@/lib/api-utils'
 
 interface UserData
 {
@@ -99,7 +98,12 @@ export default function ProfilePage ()
     try
     {
       setLoading(true)
-      const response = await apiRequest(`/api/user/profile/${ session.user.id }`)
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/user/profile/${ session.user.id }`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+        }
+      })
       if (!response.ok)
       {
         throw new Error('Failed to fetch user data')
@@ -142,8 +146,12 @@ export default function ProfilePage ()
       setSavingProfile(true)
       setError(null)
 
-      const response = await apiRequest(`/api/user/profile/${ userData.id }`, {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/user/profile/${ userData.id }`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+        },
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim() !== userData?.email ? email.trim() : undefined
@@ -194,8 +202,12 @@ export default function ProfilePage ()
       setSavingPassword(true)
       setError(null)
 
-      const response = await apiRequest('/api/user/change-password', {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/user/change-password`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+        },
         body: JSON.stringify({
           currentPassword,
           newPassword
@@ -236,8 +248,12 @@ export default function ProfilePage ()
       setSavingAccountName(true)
       setError(null)
 
-      const response = await apiRequest(`/api/account/update/${ userData.accountId }`, {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/account/update/${ userData.accountId }`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+        },
         body: JSON.stringify({
           name: accountName.trim()
         })
@@ -273,8 +289,12 @@ export default function ProfilePage ()
       }
       setError(null)
 
-      const response = await apiRequest(`/api/dev/reset-db?${ type === 'user' ? 'userId' : 'accountId' }=${ id }`, {
-        method: 'GET'
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/dev/reset-db?${ type === 'user' ? 'userId' : 'accountId' }=${ id }`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+        }
       })
 
       if (!response.ok)
@@ -308,8 +328,12 @@ export default function ProfilePage ()
       setDeletingAccount(true)
       setError(null)
 
-      const response = await apiRequest(`/api/account/delete/${ userData.accountId }`, {
-        method: 'DELETE'
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/account/delete/${ userData.accountId }`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+        }
       })
 
       if (!response.ok)

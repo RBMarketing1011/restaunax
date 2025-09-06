@@ -1,6 +1,5 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { getUserProfileEndpoint, getAPIHeaders } from './api-utils'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,15 +18,11 @@ export const authOptions: NextAuthOptions = {
 
         try
         {
-          // Use appropriate auth endpoint (internal or external)
-          const authEndpoint = process.env.NEXT_PUBLIC_API_BASE_URL + '/api/auth/check-credentials'
-          const headers = getAPIHeaders(true)
-
-          console.log('🔐 Auth Debug:', {
-            authEndpoint,
-            headers,
-            baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL
-          })
+          const authEndpoint = `${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/auth/check-credentials`
+          const headers = {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || ''
+          }
 
           const response = await fetch(authEndpoint, {
             method: 'POST',
@@ -38,16 +33,9 @@ export const authOptions: NextAuthOptions = {
             })
           })
 
-          console.log('🔐 Auth Response:', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url
-          })
-
           if (!response.ok)
           {
             const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-            console.log('🔐 Auth Error Data:', errorData)
             if (errorData.code === 'EMAIL_NOT_VERIFIED')
             {
               throw new Error('EMAIL_NOT_VERIFIED')
@@ -55,35 +43,11 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          const responseData = await response.json()
-          console.log('🔐 Response Data:', responseData)
-
-          // Handle different response formats
-          let user
-          const isInternal = authEndpoint.includes('/api/auth/check-credentials')
-          if (isInternal)
-          {
-            // Internal API: user data is directly in the response
-            // Format: { id, email, name, accountId }
-            user = responseData
-          } else
-          {
-            // External API: user data is wrapped in a 'user' object
-            // Format: { token, user: { id, email, name, accountId } }
-            user = responseData.user
-            // Store the token if provided
-            if (responseData.token)
-            {
-              user.accessToken = responseData.token
-            }
-          }
-
-          console.log('🔐 Final User Data:', user)
-          return user
+          const user = await response.json()
+          return user.user
         } catch (error)
         {
           console.error('Auth error:', error)
-          // For email verification, we'll return null and let the frontend handle it
           return null
         }
       }
@@ -119,9 +83,10 @@ export const authOptions: NextAuthOptions = {
       {
         try
         {
-          const profileEndpoint = getUserProfileEndpoint(token.id as string)
+          const profileEndpoint = `${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/user/profile/${ token.id }`
           const headers = {
-            ...getAPIHeaders(),
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
             'Authorization': `Bearer ${ token.accessToken || '' }`
           }
 

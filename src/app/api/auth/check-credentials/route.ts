@@ -60,10 +60,12 @@ export async function POST (request: NextRequest)
     // All good - return user data for NextAuth
     return NextResponse.json(
       {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        accountId: accountId
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          accountId: accountId
+        }
       },
       { status: 200 }
     )
