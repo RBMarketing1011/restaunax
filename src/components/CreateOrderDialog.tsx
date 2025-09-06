@@ -79,9 +79,12 @@ export default function CreateOrderDialog ({ open, onClose, onOrderCreated }: Cr
     setLoading(true)
     try
     {
-      const response = await fetch('/api/orders', {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+        },
         body: JSON.stringify({
           customerName,
           orderType,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import
@@ -14,7 +14,6 @@ import
   TextField,
   Button,
   Alert,
-  Divider,
   Stack,
   Dialog,
   DialogTitle,
@@ -22,7 +21,6 @@ import
   DialogActions,
   IconButton,
   CircularProgress,
-  Chip,
   InputAdornment
 } from '@mui/material'
 import
@@ -33,6 +31,7 @@ import
   VisibilityOff
 } from '@mui/icons-material'
 import DashboardLayout from '@/components/DashboardLayout'
+import { apiRequest } from '@/lib/api-utils'
 
 interface UserData
 {
@@ -93,12 +92,14 @@ export default function ProfilePage ()
   }, [ session, router ])
 
   // Fetch user data
-  const fetchUserData = async () =>
+  const fetchUserData = useCallback(async () =>
   {
+    if (!session?.user?.id) return
+
     try
     {
       setLoading(true)
-      const response = await fetch('/api/user/profile')
+      const response = await apiRequest(`/api/user/profile/${ session.user.id }`)
       if (!response.ok)
       {
         throw new Error('Failed to fetch user data')
@@ -116,7 +117,7 @@ export default function ProfilePage ()
     {
       setLoading(false)
     }
-  }
+  }, [ session?.user?.id ])
 
   useEffect(() =>
   {
@@ -124,7 +125,7 @@ export default function ProfilePage ()
     {
       fetchUserData()
     }
-  }, [ session ])
+  }, [ session, fetchUserData ])
 
   const handleUpdateProfile = async () =>
   {
@@ -134,14 +135,15 @@ export default function ProfilePage ()
       return
     }
 
+    if (!userData?.id) return
+
     try
     {
       setSavingProfile(true)
       setError(null)
 
-      const response = await fetch('/api/user/profile', {
+      const response = await apiRequest(`/api/user/profile/${ userData.id }`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim() !== userData?.email ? email.trim() : undefined
@@ -158,9 +160,9 @@ export default function ProfilePage ()
       setSuccess(data.message)
       await update() // Refresh session data
       await fetchUserData() // Refresh user data
-    } catch (err: any)
+    } catch (err: unknown)
     {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally
     {
       setSavingProfile(false)
@@ -192,9 +194,8 @@ export default function ProfilePage ()
       setSavingPassword(true)
       setError(null)
 
-      const response = await fetch('/api/user/change-password', {
+      const response = await apiRequest('/api/user/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPassword,
           newPassword
@@ -211,9 +212,9 @@ export default function ProfilePage ()
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (err: any)
+    } catch (err: unknown)
     {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally
     {
       setSavingPassword(false)
@@ -228,14 +229,15 @@ export default function ProfilePage ()
       return
     }
 
+    if (!userData?.accountId) return
+
     try
     {
       setSavingAccountName(true)
       setError(null)
 
-      const response = await fetch('/api/account/update', {
+      const response = await apiRequest(`/api/account/update/${ userData.accountId }`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: accountName.trim()
         })
@@ -249,9 +251,9 @@ export default function ProfilePage ()
 
       setSuccess('Account name updated successfully')
       await fetchUserData()
-    } catch (err: any)
+    } catch (err: unknown)
     {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally
     {
       setSavingAccountName(false)
@@ -262,10 +264,16 @@ export default function ProfilePage ()
   {
     try
     {
-      type === 'user' ? setDeletingAccountData(true) : setSeedingAccount(true)
+      if (type === 'user')
+      {
+        setDeletingAccountData(true)
+      } else
+      {
+        setSeedingAccount(true)
+      }
       setError(null)
 
-      const response = await fetch(`/api/dev/reset-db?${ type === 'user' ? 'userId' : 'accountId' }=${ id }`, {
+      const response = await apiRequest(`/api/dev/reset-db?${ type === 'user' ? 'userId' : 'accountId' }=${ id }`, {
         method: 'GET'
       })
 
@@ -276,26 +284,31 @@ export default function ProfilePage ()
       }
 
       setSuccess('Account seeded successfully with sample data')
-    } catch (err: any)
+    } catch (err: unknown)
     {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally
     {
-      type === 'user' ?
+      if (type === 'user')
+      {
         setDeletingAccountData(false)
-        :
+      } else
+      {
         setSeedingAccount(false)
+      }
     }
   }
 
   const handleDeleteAccount = async () =>
   {
+    if (!userData?.accountId) return
+
     try
     {
       setDeletingAccount(true)
       setError(null)
 
-      const response = await fetch('/api/account/delete', {
+      const response = await apiRequest(`/api/account/delete/${ userData.accountId }`, {
         method: 'DELETE'
       })
 
@@ -306,9 +319,9 @@ export default function ProfilePage ()
       }
 
       router.push('/auth/signin?message=Account deleted successfully')
-    } catch (err: any)
+    } catch (err: unknown)
     {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'An error occurred')
       setDeletingAccount(false)
     }
   }
@@ -466,116 +479,111 @@ export default function ProfilePage ()
             </CardContent>
           </Card>
 
-          {/* Account Management (Owner Only) */ }
-          { userData.isAccountOwner && (
-            <>
-              <Card>
-                <CardHeader
-                  title="Account Management"
-                  subheader="You are the account owner"
+          {/* Account Management */ }
+          <Card>
+            <CardHeader
+              title="Account Management"
+            />
+            <CardContent>
+              <Stack spacing={ 3 }>
+                <TextField
+                  label="Account Name"
+                  value={ accountName }
+                  onChange={ (e) => setAccountName(e.target.value) }
+                  fullWidth
+                  required
                 />
-                <CardContent>
-                  <Stack spacing={ 3 }>
-                    <TextField
-                      label="Account Name"
-                      value={ accountName }
-                      onChange={ (e) => setAccountName(e.target.value) }
-                      fullWidth
-                      required
-                    />
 
-                    <Box sx={ { display: 'flex', gap: 2, flexWrap: 'wrap' } }>
+                <Box sx={ { display: 'flex', gap: 2, flexWrap: 'wrap' } }>
+                  <Button
+                    variant="contained"
+                    onClick={ handleUpdateAccountName }
+                    disabled={ savingAccountName }
+                    sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
+                  >
+                    { savingAccountName ? <CircularProgress size={ 20 } color="inherit" /> : 'Update Account Name' }
+                  </Button>
+
+                  { process.env.NEXT_PUBLIC_NODE_ENV === 'development' && (
+                    <>
                       <Button
-                        variant="contained"
-                        onClick={ handleUpdateAccountName }
-                        disabled={ savingAccountName }
-                        sx={ { bgcolor: '#ff6b35', color: 'white', '&:hover': { bgcolor: '#e55a2b' } } }
+                        variant="outlined"
+                        onClick={ () => handleSeedAccount('account', userData.accountId) }
+                        disabled={ seedingAccount }
+                        sx={ {
+                          borderColor: '#4caf50',
+                          color: '#4caf50',
+                          '&:hover': {
+                            borderColor: '#45a049',
+                            bgcolor: 'rgba(76, 175, 80, 0.04)'
+                          }
+                        } }
                       >
-                        { savingAccountName ? <CircularProgress size={ 20 } color="inherit" /> : 'Update Account Name' }
+                        {
+                          seedingAccount ?
+                            <CircularProgress
+                              size={ 20 }
+                              color="inherit"
+                            />
+                            :
+                            'Seed Account'
+                        }
                       </Button>
 
-                      { process.env.NEXT_PUBLIC_NODE_ENV === 'development' && (
-                        <>
-                          <Button
-                            variant="outlined"
-                            onClick={ () => handleSeedAccount('account', userData.accountId) }
-                            disabled={ seedingAccount }
-                            sx={ {
-                              borderColor: '#4caf50',
-                              color: '#4caf50',
-                              '&:hover': {
-                                borderColor: '#45a049',
-                                bgcolor: 'rgba(76, 175, 80, 0.04)'
-                              }
-                            } }
-                          >
-                            {
-                              seedingAccount ?
-                                <CircularProgress
-                                  size={ 20 }
-                                  color="inherit"
-                                />
-                                :
-                                'Seed Account'
-                            }
-                          </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={ () => handleSeedAccount('user', userData.id) }
+                        disabled={ deletingAccountData }
+                        sx={ {
+                          bgcolor: '#e6352b',
+                          borderColor: '#e6352b',
+                          color: '#ffffff',
+                          '&:hover': {
+                            borderColor: '#b32922',
+                            bgcolor: '#b32922'
+                          }
+                        } }
+                      >
+                        {
+                          deletingAccountData ?
+                            <CircularProgress
+                              size={ 20 }
+                              color="inherit"
+                            />
+                            :
+                            'Delete Data'
+                        }
+                      </Button>
+                    </>
+                  ) }
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
 
-                          <Button
-                            variant="outlined"
-                            onClick={ () => handleSeedAccount('user', userData.id) }
-                            disabled={ deletingAccountData }
-                            sx={ {
-                              bgcolor: '#e6352b',
-                              borderColor: '#e6352b',
-                              color: '#ffffff',
-                              '&:hover': {
-                                borderColor: '#b32922',
-                                bgcolor: '#b32922'
-                              }
-                            } }
-                          >
-                            {
-                              deletingAccountData ?
-                                <CircularProgress
-                                  size={ 20 }
-                                  color="inherit"
-                                />
-                                :
-                                'Delete Data'
-                            }
-                          </Button>
-                        </>
-                      ) }
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-
-              {/* Danger Zone */ }
-              <Card sx={ { borderColor: 'error.main', borderWidth: 1, borderStyle: 'solid' } }>
-                <CardHeader
-                  title="Danger Zone"
-                  titleTypographyProps={ { color: 'error.main' } }
-                />
-                <CardContent>
-                  <Alert severity="warning" sx={ { mb: 2 } }>
-                    <Typography variant="body2">
-                      Deleting your account will permanently remove all data including orders, users, and settings.
-                      This action cannot be undone.
-                    </Typography>
-                  </Alert>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={ <Delete /> }
-                    onClick={ () => setDeleteAccountDialog(true) }
-                  >
-                    Delete Account
-                  </Button>
-                </CardContent>
-              </Card>
-            </>
-          ) }
+          {/* Danger Zone */ }
+          <Card sx={ { borderColor: 'error.main', borderWidth: 1, borderStyle: 'solid' } }>
+            <CardHeader
+              title="Danger Zone"
+              titleTypographyProps={ { color: 'error.main' } }
+            />
+            <CardContent>
+              <Alert severity="warning" sx={ { mb: 2 } }>
+                <Typography variant="body2">
+                  Deleting your account will permanently remove all data including orders, users, and settings.
+                  This action cannot be undone.
+                </Typography>
+              </Alert>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={ <Delete /> }
+                onClick={ () => setDeleteAccountDialog(true) }
+              >
+                Delete Account
+              </Button>
+            </CardContent>
+          </Card>
         </Stack>
 
         {/* Delete Account Dialog */ }

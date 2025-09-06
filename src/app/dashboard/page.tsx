@@ -42,9 +42,6 @@ import { useTheme } from '@mui/material/styles'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import
 {
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
   XAxis,
@@ -83,13 +80,6 @@ interface ItemData
 {
   name: string
   quantity: number
-}
-
-interface DelayInfo
-{
-  delayed: boolean
-  reason?: string
-  minutes?: number
 }
 
 // Data utility functions
@@ -199,53 +189,6 @@ const topItems = (orders: Order[], limit = 10): ItemData[] =>
     .slice(0, limit)
 }
 
-const isDelayed = (order: Order): DelayInfo =>
-{
-  const now = new Date().getTime()
-  const orderTime = new Date(order.createdAt).getTime()
-  const minutesElapsed = (now - orderTime) / (1000 * 60)
-
-  // Don't flag delivered orders as delayed
-  if (order.status === 'delivered')
-  {
-    return { delayed: false }
-  }
-
-  // Pending orders that haven't been started in reasonable time
-  if (order.status === 'pending' && minutesElapsed > 10)
-  {
-    return { delayed: true, reason: 'Pending too long', minutes: Math.floor(minutesElapsed) }
-  }
-
-  // Preparing orders that are taking too long
-  if (order.status === 'preparing' && minutesElapsed > 30)
-  {
-    return { delayed: true, reason: 'Preparing too long', minutes: Math.floor(minutesElapsed) }
-  }
-
-  // Ready orders waiting for pickup/delivery too long
-  if (order.status === 'ready' && minutesElapsed > 20)
-  {
-    return { delayed: true, reason: 'Ready too long', minutes: Math.floor(minutesElapsed) }
-  }
-
-  return { delayed: false }
-}
-
-const getLiveOrders = (orders: Order[]): Order[] =>
-{
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  return orders.filter(order =>
-  {
-    const orderDate = new Date(order.createdAt)
-    const isToday = orderDate >= today
-    const isNotDelivered = order.status !== 'delivered'
-    return isToday && isNotDelivered
-  })
-}
-
 const formatCurrency = (amount: number): string =>
 {
   return new Intl.NumberFormat('en-US', {
@@ -264,9 +207,6 @@ const formatRelativeTime = (date: string | Date): string =>
   if (diffMinutes < 1440) return `${ Math.floor(diffMinutes / 60) }h ago`
   return `${ Math.floor(diffMinutes / 1440) }d ago`
 }
-
-// Status colors
-const COLORS = [ '#ff6b35', '#2196f3', '#4caf50', '#ff9800' ]
 
 // Components
 function KpiCards ({ orders }: { orders: Order[] })
@@ -505,39 +445,6 @@ function FiltersBar ({ filters, onFiltersChange }: {
       </CardContent>
     </Card>
   )
-} function StatusPieChart ({ orders }: { orders: Order[] })
-{
-  const statusCounts = groupByStatus(orders)
-  const data = Object.entries(statusCounts)
-    .filter(([ _, count ]) => count > 0)
-    .map(([ status, count ]) => ({ name: status, value: count }))
-
-  return (
-    <Card>
-      <CardHeader title="Orders by Status" />
-      <CardContent>
-        <ResponsiveContainer width="100%" height={ 300 }>
-          <PieChart>
-            <Pie
-              data={ data }
-              cx="50%"
-              cy="50%"
-              labelLine={ false }
-              label={ ({ name, value }) => `${ name }: ${ value }` }
-              outerRadius={ 80 }
-              fill="#8884d8"
-              dataKey="value"
-            >
-              { data.map((entry, index) => (
-                <Cell key={ `cell-${ index }` } fill={ COLORS[ index % COLORS.length ] } />
-              )) }
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  )
 }
 
 function OrdersOverTimeChart ({ orders, timeRange }: { orders: Order[], timeRange: string })
@@ -771,72 +678,6 @@ function LiveOrdersTable ({ orders }: { orders: Order[] })
   )
 }
 
-function DelayedOrdersCard ({ orders }: { orders: Order[] })
-{
-  const delayedOrders = orders
-    .map(order => ({ ...order, delayInfo: isDelayed(order) }))
-    .filter(order => order.delayInfo.delayed)
-
-  // Debug logging
-  console.log('DelayedOrdersCard - Total orders:', orders.length)
-  console.log('DelayedOrdersCard - Orders with delay info:', orders.map(order => ({
-    id: order.id,
-    status: order.status,
-    createdAt: order.createdAt,
-    minutesOld: Math.floor((new Date().getTime() - new Date(order.createdAt).getTime()) / (1000 * 60)),
-    delayInfo: isDelayed(order)
-  })))
-  console.log('DelayedOrdersCard - Delayed orders count:', delayedOrders.length)
-
-  return (
-    <Card>
-      <CardHeader
-        title="Delayed Orders"
-        subheader={ `${ delayedOrders.length } orders need attention` }
-      />
-      <CardContent>
-        { delayedOrders.length === 0 ? (
-          <Typography color="textSecondary">No delayed orders</Typography>
-        ) : (
-          <Stack spacing={ 2 }>
-            { delayedOrders.map((order) => (
-              <Box
-                key={ order.id }
-                sx={ {
-                  p: 2,
-                  border: 1,
-                  borderColor: (order.delayInfo.minutes || 0) > 30 ? 'error.main' : 'warning.main',
-                  borderRadius: 1,
-                  bgcolor: (order.delayInfo.minutes || 0) > 30 ? 'error.main' : 'warning.main'
-                } }
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={ {
-                    color: 'white',
-                    fontWeight: 'bold'
-                  } }
-                >
-                  #{ order.id } - { order.customerName }
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={ {
-                    color: 'white',
-                    opacity: 0.9
-                  } }
-                >
-                  { order.delayInfo.reason } ({ order.delayInfo.minutes } minutes)
-                </Typography>
-              </Box>
-            )) }
-          </Stack>
-        ) }
-      </CardContent>
-    </Card>
-  )
-}
-
 export default function OrdersDashboard ()
 {
   const { data: session, status } = useSession()
@@ -863,7 +704,11 @@ export default function OrdersDashboard ()
     try
     {
       setLoading(true)
-      const response = await fetch('/api/orders')
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/orders`, {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+        }
+      })
       if (!response.ok)
       {
         throw new Error('Failed to fetch orders')
@@ -895,11 +740,6 @@ export default function OrdersDashboard ()
       orderType: filters.orderType
     })
   }, [ orders, filters ])
-
-  const liveOrders = useMemo(() =>
-  {
-    return getLiveOrders(orders)
-  }, [ orders ])
 
   if (loading)
   {

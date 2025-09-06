@@ -1,254 +1,89 @@
-# Restaunax - Order Management Dashboard
+# RestaunaX - Restaurant Order Management
 
-A modern, responsive restaurant order management system built with Next.js 14, TypeScript, Material UI, and PostgreSQL.
+A modern restaurant order management dashboard built with Next.js, TypeScript, Material UI, and PostgreSQL.
 
-## 🚀 Features
+## Quick Setup
 
-- **Real-time Order Dashboard**: View orders organized by status (Pending, Preparing, Ready, Delivered)
-- **Order Management**: Update order status with a single click
-- **Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
-- **Material UI Components**: Beautiful, accessible UI components
-- **RESTful API**: Clean API endpoints for order operations
-- **PostgreSQL Database**: Robust data storage with Prisma ORM
-- **TypeScript**: Full type safety throughout the application
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 14 (App Router), React 19, TypeScript
-- **UI Library**: Material UI v6, Emotion (CSS-in-JS)
-- **Backend**: Next.js API Routes
-- **Database**: PostgreSQL with Prisma ORM
-- **Development**: ESLint, Hot Reload
-
-## 📋 Prerequisites
-
-- Node.js 18+ 
-- PostgreSQL database
-- npm or yarn package manager
-
-## 🏗️ Installation & Setup
-
-1. **Clone the repository**
+1. **Install**
    ```bash
-   git clone <repository-url>
+   git clone <repo-url>
    cd restaunax
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Database Setup**
-   - Ensure PostgreSQL is running on your system
-   - Create a database named `test` (or update the connection string)
-   - Update the `.env` file with your database credentials:
-   ```env
-   DATABASE_URL="postgresql://admin:test@123@localhost:5432/test"
-   ```
-
-4. **Initialize Database**
+2. **Configure**
    ```bash
-   # Run database migrations
-   npm run db:migrate
-   
-   # Seed with sample data
-   npm run db:seed
+   cp .env.example .env
+   # Edit .env with your database URL and other settings
    ```
 
-5. **Start Development Server**
+3. **Database**
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+4. **Run**
    ```bash
    npm run dev
    ```
-   
-   Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## 📁 Project Structure
+Visit [http://localhost:3000](http://localhost:3000)
 
-```
-restaunax/
-├── src/
-│   ├── app/
-│   │   ├── api/orders/          # API routes for order management
-│   │   ├── components/          # Reusable UI components
-│   │   ├── layout.tsx           # Root layout with theme provider
-│   │   └── page.tsx             # Main dashboard page
-│   ├── lib/
-│   │   └── prisma.ts            # Prisma client configuration
-│   └── types/
-│       └── order.ts             # TypeScript type definitions
-├── prisma/
-│   ├── schema.prisma            # Database schema
-│   └── seed.ts                  # Database seeding script
-├── .env                         # Environment variables
-└── package.json
-```
+## Features
 
-## 🔌 API Endpoints
+- Order management dashboard
+- Real-time order tracking
+- User authentication
+- Analytics dashboard
+- Mobile responsive design
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/orders` | Fetch all orders (optional status filter) |
-| GET | `/api/orders/[id]` | Fetch specific order by ID |
-| POST | `/api/orders` | Create new order |
-| PATCH | `/api/orders/[id]` | Update order status |
+## Tech Stack
 
-### Example API Usage
+- **Frontend**: Next.js 14, React, TypeScript, Material UI
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL with Prisma
+- **Auth**: NextAuth.js
 
-**Get all orders:**
-```bash
-curl http://localhost:3000/api/orders
-```
-
-**Filter by status:**
-```bash
-curl http://localhost:3000/api/orders?status=pending
-```
-
-**Update order status:**
-```bash
-curl -X PATCH http://localhost:3000/api/orders/ORDER_ID \
-  -H "Content-Type: application/json" \
-  -d '{"status": "preparing"}'
-```
-
-**Create new order:**
-```bash
-curl -X POST http://localhost:3000/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerName": "John Doe",
-    "orderType": "delivery",
-    "total": 25.99,
-    "items": [
-      {
-        "name": "Margherita Pizza",
-        "quantity": 1,
-        "price": 18.99
-      },
-      {
-        "name": "Garlic Bread",
-        "quantity": 1,
-        "price": 7.00
-      }
-    ]
-  }'
-```
-
-## 💾 Database Schema
-
-### Orders Table
-- `id`: Unique identifier (CUID)
-- `customerName`: Customer's name
-- `orderType`: 'delivery' or 'pickup'
-- `status`: 'pending', 'preparing', 'ready', or 'delivered'
-- `total`: Order total amount
-- `createdAt`: Order creation timestamp
-- `updatedAt`: Last update timestamp
-
-### Order Items Table
-- `id`: Unique identifier (CUID)
-- `name`: Item name
-- `quantity`: Item quantity
-- `price`: Item unit price
-- `orderId`: Foreign key to orders table
-
-## 🎨 UI Features
-
-- **Status Tabs**: Orders organized by status with counts
-- **Order Cards**: Clean, informative order displays
-- **Order Details Modal**: Detailed view with action buttons
-- **Status Workflow**: Intuitive status progression (Pending → Preparing → Ready → Delivered)
-- **Responsive Design**: Adapts to mobile, tablet, and desktop screens
-- **Loading States**: User-friendly loading indicators
-- **Error Handling**: Graceful error messages and recovery
-
-## 🧪 Development Commands
+## Development
 
 ```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run linting
-npm run lint
-
-# Database commands
-npm run db:migrate    # Run migrations
-npm run db:seed       # Seed sample data
-npm run db:studio     # Open Prisma Studio
+npm run dev          # Start dev server
+npm run build        # Build for production
+npx prisma studio    # Database GUI
 ```
 
-## 🚀 Deployment
+## Implementation Overview
 
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
+This is a full-stack Next.js application designed with flexibility in mind. The architecture supports both monolithic deployment and easy separation into microservices.
 
-2. **Set up production database**
-   - Update `DATABASE_URL` in production environment
-   - Run migrations: `npm run db:migrate`
+**Key Design Decisions:**
+- **Unified Codebase**: Frontend and backend in a single Next.js project for rapid development
+- **Flexible API Layer**: Environment variables control whether to use internal APIs or external backend
+- **Type Safety**: Full TypeScript implementation with Prisma for database operations
+- **Modern Auth**: NextAuth.js handles authentication with email verification
+- **Responsive Design**: Material UI components with mobile-first approach
 
-3. **Deploy to your preferred platform**
-   - Vercel (recommended for Next.js)
-   - Railway, Heroku, or any Node.js hosting service
+**Architecture Benefits:**
+- Can run as standalone application (current setup)
+- Easy migration to separate backend by changing `NEXT_PUBLIC_API_BASE_URL`
+- API endpoints include authentication headers for external service integration
+- Clean separation of concerns with reusable components
 
-## 🔧 Configuration
+## Challenges Faced
 
-### Environment Variables
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
-```
+**Framework Architecture Decision:**
+The main challenge was choosing the right architecture approach. Initially, I built this as a complete Next.js full-stack application with integrated API routes for rapid development and deployment.
 
-### Customization Options
-- **Theme Colors**: Modify theme in `src/app/components/ThemeProvider.tsx`
-- **Order Statuses**: Update enums in `prisma/schema.prisma` and `src/types/order.ts`
-- **UI Components**: Customize Material UI components in the theme provider
+However, anticipating that you might later want to separate the backend for microservices architecture, I refactored the application to support both approaches:
 
-## 🤝 Contributing
+- **Phase 1**: Built unified Next.js app with internal API routes
+- **Phase 2**: Made all API calls configurable via environment variables (`NEXT_PUBLIC_API_BASE_URL`)
+- **Phase 3**: Added authentication headers (`x-api-key`) for external backend integration
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+This flexible approach means you can:
+- Use it as-is for quick deployment
+- Easily extract the API routes to a separate Node.js backend later
+- Switch between internal and external APIs without code changes
 
-## 📝 Implementation Notes
-
-### Architecture Decisions
-- **Next.js App Router**: Leverages the latest Next.js features for better performance
-- **API Routes**: Built-in API functionality eliminates need for separate backend
-- **Prisma ORM**: Type-safe database operations with excellent developer experience
-- **Material UI**: Provides consistent, accessible, and customizable components
-- **PostgreSQL**: Robust relational database suitable for production use
-
-### Challenges Overcome
-- **Real-time Updates**: Implemented manual refresh functionality (WebSocket integration would be a future enhancement)
-- **Mobile Responsiveness**: Used Material UI's responsive utilities and breakpoints
-- **State Management**: React hooks provide sufficient state management for this scope
-- **Error Handling**: Comprehensive error boundaries and user feedback
-
-### Future Enhancements
-- Real-time updates with WebSockets or Server-Sent Events
-- User authentication and role-based access
-- Order analytics and reporting dashboard
-- Integration with payment systems
-- Push notifications for status updates
-- Advanced filtering and search capabilities
-- Print functionality for kitchen orders
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Material UI team for the excellent component library
-- Prisma team for the fantastic ORM
-- Next.js team for the robust framework
+The challenge was ensuring the authentication system worked seamlessly with both internal NextAuth routes and external API endpoints, which required adaptive response handling.

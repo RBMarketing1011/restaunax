@@ -128,7 +128,11 @@ export default function OrderDashboard ()
     try
     {
       setLoading(true)
-      const response = await fetch('/api/orders')
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/orders`, {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+        }
+      })
       if (!response.ok)
       {
         throw new Error('Failed to fetch orders')
@@ -163,10 +167,11 @@ export default function OrderDashboard ()
   {
     try
     {
-      const response = await fetch(`/api/orders/${ orderId }`, {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/orders/${ orderId }`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
         },
         body: JSON.stringify({ status: newStatus }),
       })

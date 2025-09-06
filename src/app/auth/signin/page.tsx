@@ -59,9 +59,12 @@ function SignInForm ()
         // Check if this might be an unverified email issue
         try
         {
-          const checkResponse = await fetch('/api/auth/check-user', {
+          const checkResponse = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/auth/check-user`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+            },
             body: JSON.stringify({ email, password })
           })
 

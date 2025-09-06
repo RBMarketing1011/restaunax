@@ -41,7 +41,11 @@ function VerifyEmailForm ()
     {
       try
       {
-        const response = await fetch(`/api/auth/verify-email?token=${ token }`)
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/api/auth/verify-email?token=${ token }`, {
+          headers: {
+            'x-api-key': process.env.NEXT_PUBLIC_AUTH_KEY || '',
+          }
+        })
         const data = await response.json()
 
         if (response.ok)

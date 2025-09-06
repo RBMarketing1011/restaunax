@@ -1,7 +1,6 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
+import { getUserProfileEndpoint, getAPIHeaders } from './api-utils'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -20,47 +19,67 @@ export const authOptions: NextAuthOptions = {
 
         try
         {
-          const user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email
-            },
-            include: {
-              ownedAccounts: true, // Accounts they own
-              account: true // Account they belong to
-            }
+          // Use appropriate auth endpoint (internal or external)
+          const authEndpoint = process.env.NEXT_PUBLIC_API_BASE_URL + '/api/auth/check-credentials'
+          const headers = getAPIHeaders(true)
+
+          console.log('🔐 Auth Debug:', {
+            authEndpoint,
+            headers,
+            baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL
           })
 
-          if (!user)
+          const response = await fetch(authEndpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password
+            })
+          })
+
+          console.log('🔐 Auth Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url
+          })
+
+          if (!response.ok)
           {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+            console.log('🔐 Auth Error Data:', errorData)
+            if (errorData.code === 'EMAIL_NOT_VERIFIED')
+            {
+              throw new Error('EMAIL_NOT_VERIFIED')
+            }
             return null
           }
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          )
+          const responseData = await response.json()
+          console.log('🔐 Response Data:', responseData)
 
-          if (!isPasswordValid)
+          // Handle different response formats
+          let user
+          const isInternal = authEndpoint.includes('/api/auth/check-credentials')
+          if (isInternal)
           {
-            return null
-          }
-
-          // Check if email is verified ONLY if credentials are correct
-          if (!user.emailVerified)
+            // Internal API: user data is directly in the response
+            // Format: { id, email, name, accountId }
+            user = responseData
+          } else
           {
-            // Store this info for the frontend to handle
-            throw new Error('EMAIL_NOT_VERIFIED')
+            // External API: user data is wrapped in a 'user' object
+            // Format: { token, user: { id, email, name, accountId } }
+            user = responseData.user
+            // Store the token if provided
+            if (responseData.token)
+            {
+              user.accessToken = responseData.token
+            }
           }
 
-          // Get the account ID (either owned or belongs to)
-          const accountId = user.ownedAccounts[ 0 ]?.id || user.accountId
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            accountId: accountId || ''
-          }
+          console.log('🔐 Final User Data:', user)
+          return user
         } catch (error)
         {
           console.error('Auth error:', error)
@@ -82,15 +101,47 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
   },
   callbacks: {
-    async jwt ({ token, user })
+    async jwt ({ token, user, trigger })
     {
+      // If this is a sign-in, store the user data
       if (user)
       {
         token.id = user.id
         token.email = user.email
         token.name = user.name
-        token.accountId = user.accountId
+        token.accountId = (user as { accountId?: string }).accountId || ''
+        token.accessToken = (user as { accessToken?: string }).accessToken || '' // If your backend provides access tokens
       }
+
+      // Refresh user data from backend on session update or periodically
+      const lastRefresh = (token.lastRefresh as number) || 0
+      if (trigger === 'update' || (Date.now() - lastRefresh > 60 * 60 * 1000)) // Refresh every hour
+      {
+        try
+        {
+          const profileEndpoint = getUserProfileEndpoint(token.id as string)
+          const headers = {
+            ...getAPIHeaders(),
+            'Authorization': `Bearer ${ token.accessToken || '' }`
+          }
+
+          const response = await fetch(profileEndpoint, { headers })
+
+          if (response.ok)
+          {
+            const userData = await response.json()
+            token.name = userData.name
+            token.email = userData.email
+            token.accountId = userData.accountId
+            token.lastRefresh = Date.now()
+          }
+        } catch (error)
+        {
+          console.error('Failed to refresh user data:', error)
+          // Keep existing token data if refresh fails
+        }
+      }
+
       return token
     },
     async session ({ session, token })

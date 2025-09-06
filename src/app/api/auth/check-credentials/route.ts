@@ -17,7 +17,11 @@ export async function POST (request: NextRequest)
     }
 
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      include: {
+        ownedAccounts: true, // Accounts they own
+        account: true // Account they belong to
+      }
     })
 
     if (!user)
@@ -42,14 +46,25 @@ export async function POST (request: NextRequest)
     if (!user.emailVerified)
     {
       return NextResponse.json(
-        { error: 'Please verify your email address before signing in. Check your email inbox for the verification link.' },
+        {
+          error: 'Please verify your email address before signing in. Check your email inbox for the verification link.',
+          code: 'EMAIL_NOT_VERIFIED'
+        },
         { status: 403 }
       )
     }
 
-    // All good - credentials correct and email verified
+    // Get the account ID (either owned or belongs to)
+    const accountId = user.ownedAccounts[ 0 ]?.id || user.accountId
+
+    // All good - return user data for NextAuth
     return NextResponse.json(
-      { success: true },
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        accountId: accountId
+      },
       { status: 200 }
     )
 

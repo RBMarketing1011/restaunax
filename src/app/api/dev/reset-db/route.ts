@@ -18,14 +18,16 @@ const menuItems = [
   { name: 'Buffalo Wings', price: 9.76 },
   { name: 'Chicken Wings', price: 14.98 },
   { name: 'Mozzarella Sticks', price: 10.99 },
+  { name: 'Onion Rings', price: 6.99 },
   { name: 'Garlic Bread', price: 5.99 },
-  { name: 'Breadsticks', price: 1.49 },
-  { name: 'Chicken Alfredo', price: 16.99 },
-  { name: 'Shrimp Scampi', price: 18.99 },
+  { name: 'Breadsticks', price: 4.99 },
+  { name: 'Chicken Alfredo Pasta', price: 17.99 },
+  { name: 'Soft Drink', price: 2.99 },
   { name: 'Tiramisu', price: 6.99 },
-  { name: 'Soda', price: 2.99 }
+  { name: 'Chocolate Cake', price: 8.99 }
 ]
 
+// Customer names for random order generation
 const customerNames = [
   'Alex Johnson', 'Sarah Chen', 'Mike Rodriguez', 'Emily Davis', 'James Wilson',
   'Lisa Thompson', 'Robert Brown', 'Jennifer Lee', 'Daniel Jackson', 'Maria Garcia',
@@ -33,11 +35,8 @@ const customerNames = [
   'Amanda White', 'Brian Clark', 'Nicole Lewis', 'Ryan Walker', 'Stephanie Hall'
 ]
 
-const orderStatuses = [ 'pending', 'preparing', 'ready', 'delivered' ]
-const orderTypes = [ 'pickup', 'delivery' ]
-
 // Function to generate random order data for the last 30 days
-function generateOrdersForLast30Days (accountId: string, ordersPerDay = 3)
+function generateOrdersForLast30Days (accountId: string)
 {
   const orders = []
   const now = new Date()
@@ -48,42 +47,39 @@ function generateOrdersForLast30Days (accountId: string, ordersPerDay = 3)
     orderDate.setDate(now.getDate() - day)
 
     // Generate 1-5 orders per day (random)
-    const dailyOrderCount = Math.floor(Math.random() * 5) + 1
+    const ordersForDay = Math.floor(Math.random() * 5) + 1
 
-    for (let orderIndex = 0; orderIndex < dailyOrderCount; orderIndex++)
+    for (let i = 0; i < ordersForDay; i++)
     {
       // Random time during the day
-      const hour = Math.floor(Math.random() * 14) + 8 // 8 AM to 10 PM
+      const hour = Math.floor(Math.random() * 14) + 9 // 9 AM to 11 PM
       const minute = Math.floor(Math.random() * 60)
       orderDate.setHours(hour, minute, 0, 0)
 
-      // Generate random items (1-4 items per order)
+      // Random order items (1-4 items)
       const itemCount = Math.floor(Math.random() * 4) + 1
       const orderItems = []
       let total = 0
 
-      for (let i = 0; i < itemCount; i++)
+      for (let j = 0; j < itemCount; j++)
       {
-        const randomItem = menuItems[ Math.floor(Math.random() * menuItems.length) ]
-        const quantity = Math.floor(Math.random() * 3) + 1 // 1-3 quantity
-        const itemTotal = randomItem.price * quantity
-
+        const item = menuItems[ Math.floor(Math.random() * menuItems.length) ]
+        const quantity = Math.floor(Math.random() * 3) + 1
         orderItems.push({
-          name: randomItem.name,
+          name: item.name,
           quantity: quantity,
-          price: randomItem.price
+          price: item.price
         })
-
-        total += itemTotal
+        total += item.price * quantity
       }
 
-      // Determine status based on order age
+      // Set realistic status based on order age
       let status = 'delivered'
       if (day === 0)
       {
-        // Today's orders - mix of all statuses
-        const todayStatuses = [ 'pending', 'preparing', 'ready', 'delivered' ]
-        status = todayStatuses[ Math.floor(Math.random() * todayStatuses.length) ]
+        // Today's orders - mix of statuses
+        const statuses = [ 'pending', 'preparing', 'ready', 'delivered' ]
+        status = statuses[ Math.floor(Math.random() * statuses.length) ]
       } else if (day === 1)
       {
         // Yesterday's orders - mostly delivered, some ready
@@ -93,7 +89,7 @@ function generateOrdersForLast30Days (accountId: string, ordersPerDay = 3)
 
       orders.push({
         customerName: customerNames[ Math.floor(Math.random() * customerNames.length) ],
-        orderType: orderTypes[ Math.floor(Math.random() * orderTypes.length) ] as 'pickup' | 'delivery',
+        orderType: (Math.random() > 0.5 ? 'pickup' : 'delivery') as 'pickup' | 'delivery',
         status: status as 'pending' | 'preparing' | 'ready' | 'delivered',
         total: Math.round(total * 100) / 100, // Round to 2 decimal places
         createdAt: new Date(orderDate),
@@ -105,103 +101,6 @@ function generateOrdersForLast30Days (accountId: string, ordersPerDay = 3)
 
   return orders
 }
-
-// Sample orders for seeding database (fallback/basic seed)
-const sampleOrders = [
-  {
-    customerName: 'Alex Johnson',
-    orderType: 'delivery' as const,
-    status: 'pending' as const,
-    total: 42.5,
-    items: [
-      { name: 'Margherita Pizza', quantity: 2, price: 15.99 },
-      { name: 'Caesar Salad', quantity: 1, price: 8.99 },
-      { name: 'Garlic Bread', quantity: 1, price: 5.99 }
-    ]
-  },
-  {
-    customerName: 'Sarah Chen',
-    orderType: 'pickup' as const,
-    status: 'preparing' as const,
-    total: 28.75,
-    items: [
-      { name: 'Pepperoni Pizza', quantity: 1, price: 18.99 },
-      { name: 'Buffalo Wings', quantity: 1, price: 9.76 }
-    ]
-  },
-  {
-    customerName: 'Mike Rodriguez',
-    orderType: 'delivery' as const,
-    status: 'ready' as const,
-    total: 65.25,
-    items: [
-      { name: 'Supreme Pizza', quantity: 2, price: 22.99 },
-      { name: 'Chicken Alfredo', quantity: 1, price: 16.99 },
-      { name: 'Tiramisu', quantity: 2, price: 6.99 }
-    ]
-  },
-  {
-    customerName: 'Emily Davis',
-    orderType: 'pickup' as const,
-    status: 'delivered' as const,
-    total: 19.99,
-    items: [
-      { name: 'Hawaiian Pizza', quantity: 1, price: 19.99 }
-    ]
-  },
-  {
-    customerName: 'James Wilson',
-    orderType: 'delivery' as const,
-    status: 'pending' as const,
-    total: 35.98,
-    items: [
-      { name: 'Meat Lovers Pizza', quantity: 1, price: 24.99 },
-      { name: 'Mozzarella Sticks', quantity: 1, price: 10.99 }
-    ]
-  },
-  {
-    customerName: 'Lisa Thompson',
-    orderType: 'pickup' as const,
-    status: 'preparing' as const,
-    total: 31.47,
-    items: [
-      { name: 'Veggie Pizza', quantity: 1, price: 17.99 },
-      { name: 'Greek Salad', quantity: 1, price: 11.99 },
-      { name: 'Breadsticks', quantity: 1, price: 1.49 }
-    ]
-  },
-  {
-    customerName: 'Robert Brown',
-    orderType: 'delivery' as const,
-    status: 'ready' as const,
-    total: 58.96,
-    items: [
-      { name: 'BBQ Chicken Pizza', quantity: 2, price: 21.99 },
-      { name: 'Chicken Wings', quantity: 1, price: 14.98 }
-    ]
-  },
-  {
-    customerName: 'Jennifer Lee',
-    orderType: 'pickup' as const,
-    status: 'delivered' as const,
-    total: 25.99,
-    items: [
-      { name: 'Gluten-Free Pizza', quantity: 1, price: 22.99 },
-      { name: 'Side Salad', quantity: 1, price: 3.00 }
-    ]
-  },
-  {
-    customerName: 'Daniel Jackson',
-    orderType: 'delivery' as const,
-    status: 'pending' as const,
-    total: 47.75,
-    items: [
-      { name: 'Seafood Pizza', quantity: 1, price: 26.99 },
-      { name: 'Shrimp Scampi', quantity: 1, price: 18.99 },
-      { name: 'Garlic Bread', quantity: 1, price: 1.77 }
-    ]
-  }
-]
 
 export async function GET (request: NextRequest)
 {

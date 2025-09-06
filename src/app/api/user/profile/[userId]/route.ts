@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 
 // GET - Fetch user profile data
-export async function GET ()
+export async function GET (request: NextRequest, { params }: { params: Promise<{ userId: string }> })
 {
   try
   {
@@ -15,8 +14,26 @@ export async function GET ()
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { userId } = await params
+
+    // Get the current user to check permissions
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    })
+
+    if (!currentUser)
+    {
+      return NextResponse.json({ error: 'Current user not found' }, { status: 404 })
+    }
+
+    // Only allow users to access their own profile
+    if (currentUser.id !== userId)
+    {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
       include: {
         account: {
           include: {
@@ -56,7 +73,7 @@ export async function GET ()
 }
 
 // PATCH - Update user profile
-export async function PATCH (request: NextRequest)
+export async function PATCH (request: NextRequest, { params }: { params: Promise<{ userId: string }> })
 {
   try
   {
@@ -66,6 +83,7 @@ export async function PATCH (request: NextRequest)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { userId } = await params
     const body = await request.json()
     const { name, email } = body
 
@@ -74,8 +92,24 @@ export async function PATCH (request: NextRequest)
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
+    // Get the current user to check permissions
+    const currentUser = await prisma.user.findUnique({
       where: { email: session.user.email }
+    })
+
+    if (!currentUser)
+    {
+      return NextResponse.json({ error: 'Current user not found' }, { status: 404 })
+    }
+
+    // Only allow users to update their own profile
+    if (currentUser.id !== userId)
+    {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
     })
 
     if (!user)
@@ -97,7 +131,11 @@ export async function PATCH (request: NextRequest)
     }
 
     // Update user
-    const updateData: any = {
+    const updateData: {
+      name: string
+      email?: string
+      emailVerified?: Date | null
+    } = {
       name: name.trim()
     }
 
@@ -109,7 +147,7 @@ export async function PATCH (request: NextRequest)
     }
 
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: userId },
       data: updateData
     })
 
